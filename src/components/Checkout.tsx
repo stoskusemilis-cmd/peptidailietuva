@@ -193,11 +193,20 @@ export function Checkout({ onClose }: CheckoutProps) {
     }
   };
 
+  const sanitizeInput = (value: string): string => {
+    return value.replace(/[<>"'`]/g, '').slice(0, 200);
+  };
+
+  const validatePhone = (phone: string): boolean => {
+    return /^[\d\s\+\-\(\)]{6,20}$/.test(phone.trim());
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    const sanitized = name === 'phone' ? value.replace(/[^0-9\s\+\-\(\)]/g, '').slice(0, 20) : sanitizeInput(value);
     setFormData(prev => ({
       ...prev,
-      [name]: value,
+      [name]: sanitized,
       ...(name === 'city' ? { parcelLocker: '' } : {}),
     }));
   };
@@ -225,6 +234,11 @@ export function Checkout({ onClose }: CheckoutProps) {
 
   const handleInfoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validatePhone(formData.phone)) {
+      setOrderError(t('invalidPhone') || 'Neteisingas telefono numeris.');
+      return;
+    }
+    setOrderError('');
     const currentSolPrice = solPrice;
     setLockedSolPrice(currentSolPrice);
     const base = parseFloat((totalEurWithFee / currentSolPrice).toFixed(4));

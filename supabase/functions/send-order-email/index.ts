@@ -1,6 +1,16 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
+function escapeHtml(str: unknown): string {
+  if (str === null || str === undefined) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;");
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
@@ -47,15 +57,15 @@ Deno.serve(async (req: Request) => {
 
     const itemsHtml = items.map((item) =>
       `<tr>
-        <td style="padding:8px 12px;border-bottom:1px solid #1e3a5f;">${item.product_name}</td>
-        <td style="padding:8px 12px;border-bottom:1px solid #1e3a5f;text-align:center;">${item.quantity}</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #1e3a5f;">${escapeHtml(item.product_name)}</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #1e3a5f;text-align:center;">${escapeHtml(item.quantity)}</td>
         <td style="padding:8px 12px;border-bottom:1px solid #1e3a5f;text-align:right;">${Number(item.price || 0).toFixed(2)}€</td>
         <td style="padding:8px 12px;border-bottom:1px solid #1e3a5f;text-align:right;">${Number(item.line_total || (item.price * item.quantity) || 0).toFixed(2)}€</td>
       </tr>`
     ).join("");
 
     const discountRow = pricing.discount_code
-      ? `<tr><td colspan="3" style="padding:6px 12px;color:#4ade80;">Nuolaida (${pricing.discount_code}, ${pricing.discount_percent}%):</td><td style="padding:6px 12px;text-align:right;color:#4ade80;">-${Number(pricing.discount_amount_eur || 0).toFixed(2)}€</td></tr>`
+      ? `<tr><td colspan="3" style="padding:6px 12px;color:#4ade80;">Nuolaida (${escapeHtml(pricing.discount_code)}, ${escapeHtml(pricing.discount_percent)}%):</td><td style="padding:6px 12px;text-align:right;color:#4ade80;">-${Number(pricing.discount_amount_eur || 0).toFixed(2)}€</td></tr>`
       : "";
 
     const shippingLabel = Number(pricing.shipping_fee_eur || order.full_order_details?.pricing?.shipping_fee_eur || 0) === 0
@@ -90,11 +100,11 @@ Deno.serve(async (req: Request) => {
     <div style="background:#0a1929;border:1px solid #1e3a5f;border-radius:16px;padding:24px;margin-bottom:20px;">
       <h3 style="margin:0 0 16px;font-size:15px;color:#22d3ee;text-transform:uppercase;letter-spacing:1px;">Kliento informacija</h3>
       <table style="width:100%;border-collapse:collapse;font-size:14px;">
-        <tr><td style="padding:6px 0;color:#64748b;width:140px;">Telefonas:</td><td style="padding:6px 0;color:#fff;font-weight:600;">${order.customer_phone || "—"}</td></tr>
-        <tr><td style="padding:6px 0;color:#64748b;">Miestas:</td><td style="padding:6px 0;color:#fff;">${order.customer_city || "—"}</td></tr>
-        <tr><td style="padding:6px 0;color:#64748b;">Paštomatas:</td><td style="padding:6px 0;color:#fff;">${locker ? `${locker.provider} — ${locker.address}${locker.locker_code ? ` (kodas: ${locker.locker_code})` : ""}` : "—"}</td></tr>
-        <tr><td style="padding:6px 0;color:#64748b;">Nuolaidos kodas:</td><td style="padding:6px 0;${pricing.discount_code ? 'color:#4ade80;font-weight:700;' : 'color:#fff;'}">${pricing.discount_code || "—"}</td></tr>
-        <tr><td style="padding:6px 0;color:#64748b;">Mokėjimo būdas:</td><td style="padding:6px 0;color:#fff;">${details.payment_method || "—"}</td></tr>
+        <tr><td style="padding:6px 0;color:#64748b;width:140px;">Telefonas:</td><td style="padding:6px 0;color:#fff;font-weight:600;">${escapeHtml(order.customer_phone) || "—"}</td></tr>
+        <tr><td style="padding:6px 0;color:#64748b;">Miestas:</td><td style="padding:6px 0;color:#fff;">${escapeHtml(order.customer_city) || "—"}</td></tr>
+        <tr><td style="padding:6px 0;color:#64748b;">Paštomatas:</td><td style="padding:6px 0;color:#fff;">${locker ? `${escapeHtml(locker.provider)} — ${escapeHtml(locker.address)}${locker.locker_code ? ` (kodas: ${escapeHtml(locker.locker_code)})` : ""}` : "—"}</td></tr>
+        <tr><td style="padding:6px 0;color:#64748b;">Nuolaidos kodas:</td><td style="padding:6px 0;${pricing.discount_code ? 'color:#4ade80;font-weight:700;' : 'color:#fff;'}">${escapeHtml(pricing.discount_code) || "—"}</td></tr>
+        <tr><td style="padding:6px 0;color:#64748b;">Mokėjimo būdas:</td><td style="padding:6px 0;color:#fff;">${escapeHtml(details.payment_method) || "—"}</td></tr>
       </table>
     </div>
 
@@ -122,7 +132,7 @@ Deno.serve(async (req: Request) => {
 
     ${pricing.discount_code && pricing.commission_percent ? `
     <div style="background:#052e16;border:1px solid #166534;border-radius:12px;padding:16px;margin-bottom:20px;">
-      <p style="margin:0 0 10px;color:#4ade80;font-weight:700;">Panaudotas nuolaidos kodas: ${pricing.discount_code} (${pricing.discount_percent}% nuolaida, sutaupyta ${Number(pricing.discount_amount_eur || 0).toFixed(2)}€)</p>
+      <p style="margin:0 0 10px;color:#4ade80;font-weight:700;">Panaudotas nuolaidos kodas: ${escapeHtml(pricing.discount_code)} (${escapeHtml(pricing.discount_percent)}% nuolaida, sutaupyta ${Number(pricing.discount_amount_eur || 0).toFixed(2)}€)</p>
       <div style="border-top:1px solid #166534;padding-top:10px;">
         <table style="width:100%;border-collapse:collapse;font-size:13px;">
           <tr>

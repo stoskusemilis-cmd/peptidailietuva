@@ -16,9 +16,29 @@ export function AdminImageUpload({ products, onClose, onImageUpdated }: AdminIma
   const [status, setStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+  const MAX_SIZE_MB = 10;
+
+  const validateFile = (file: File): string | null => {
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      return 'Leidžiami tik JPG, PNG, WEBP, GIF formatai.';
+    }
+    if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+      return `Failas per didelis. Maksimalus dydis: ${MAX_SIZE_MB}MB.`;
+    }
+    return null;
+  };
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    const validationError = validateFile(file);
+    if (validationError) {
+      setStatus({ type: 'error', message: validationError });
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
 
     setSelectedFile(file);
     setStatus(null);
@@ -29,6 +49,12 @@ export function AdminImageUpload({ products, onClose, onImageUpdated }: AdminIma
 
   const handleUpload = async () => {
     if (!selectedProduct || !selectedFile) return;
+
+    const validationError = validateFile(selectedFile);
+    if (validationError) {
+      setStatus({ type: 'error', message: validationError });
+      return;
+    }
 
     setUploading(true);
     setStatus(null);
@@ -70,7 +96,14 @@ export function AdminImageUpload({ products, onClose, onImageUpdated }: AdminIma
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     const file = e.dataTransfer.files?.[0];
-    if (!file || !file.type.startsWith('image/')) return;
+    if (!file) return;
+
+    const validationError = validateFile(file);
+    if (validationError) {
+      setStatus({ type: 'error', message: validationError });
+      return;
+    }
+
     setSelectedFile(file);
     setStatus(null);
     const reader = new FileReader();
