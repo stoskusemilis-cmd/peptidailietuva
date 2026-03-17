@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://peptidai.lt/sitemap.xml
