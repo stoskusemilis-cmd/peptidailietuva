@@ -37,6 +37,7 @@ export function Checkout({ onClose }: CheckoutProps) {
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const submittingRef = useRef(false);
+  const paymentConfirmedRef = useRef(false);
 
   const [cities, setCities] = useState<string[]>([]);
   const [parcelLockers, setParcelLockers] = useState<ParcelLocker[]>([]);
@@ -112,9 +113,10 @@ export function Checkout({ onClose }: CheckoutProps) {
         });
         const data = await res.json();
         if (!cancelled && data.confirmed) {
-          setPaymentConfirmed(true);
           if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
           if (countdownRef.current) clearInterval(countdownRef.current);
+          paymentConfirmedRef.current = true;
+          setPaymentConfirmed(true);
           setStep('success');
         }
       } catch {}
@@ -527,7 +529,7 @@ export function Checkout({ onClose }: CheckoutProps) {
               <p className="text-2xl font-bold text-white">{orderNumber}</p>
             </div>
 
-            {paymentConfirmed ? (
+            {(paymentConfirmed || paymentConfirmedRef.current) ? (
               <div className="bg-green-500/20 border-2 border-green-400/50 rounded-xl p-6 mb-6">
                 <div className="flex items-center justify-center gap-3 mb-2">
                   <CheckCircle className="w-8 h-8 text-green-400" />
