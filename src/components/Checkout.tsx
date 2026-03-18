@@ -359,7 +359,7 @@ export function Checkout({ onClose }: CheckoutProps) {
       clearCart();
 
       if (selectedPayment === 'swaps') {
-        const swapsUrl = `https://www.swaps.app/?side=buy&amount=${solAmount}&fiat=EUR&to=SOL%3Asolana&country=LT&method=apple_pay&toAddress=${SOLANA_ADDRESS}`;
+        const swapsUrl = `https://www.swaps.app/?side=buy&amount=${totalEurWithFee.toFixed(2)}&fiat=EUR&to=SOL%3Asolana&country=LT&method=apple_pay&toAddress=${SOLANA_ADDRESS}`;
         window.open(swapsUrl, '_blank');
       }
 
@@ -454,7 +454,7 @@ export function Checkout({ onClose }: CheckoutProps) {
 
             {snapshotPaymentMethod === 'swaps' && (
               <a
-                href={`https://www.swaps.app/?side=buy&amount=${snapshotSolAmount}&fiat=EUR&to=SOL%3Asolana&country=LT&method=apple_pay&toAddress=${SOLANA_ADDRESS}`}
+                href={`https://www.swaps.app/?side=buy&amount=${(snapshotTotalEur - (snapshotDiscount?.amount || 0) + snapshotShippingFee).toFixed(2)}&fiat=EUR&to=SOL%3Asolana&country=LT&method=apple_pay&toAddress=${SOLANA_ADDRESS}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2 w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-3 px-5 rounded-xl mb-4 transition-colors text-sm"
@@ -611,7 +611,7 @@ export function Checkout({ onClose }: CheckoutProps) {
 
                 {snapshotPaymentMethod === 'swaps' && (
                   <a
-                    href={`https://www.swaps.app/?side=buy&amount=${snapshotSolAmount}&fiat=EUR&to=SOL%3Asolana&country=LT&method=apple_pay&toAddress=${SOLANA_ADDRESS}`}
+                    href={`https://www.swaps.app/?side=buy&amount=${(snapshotTotalEur - (snapshotDiscount?.amount || 0) + snapshotShippingFee).toFixed(2)}&fiat=EUR&to=SOL%3Asolana&country=LT&method=apple_pay&toAddress=${SOLANA_ADDRESS}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center justify-center gap-3 w-full bg-cyan-500 hover:bg-cyan-400 text-white font-bold py-4 px-6 rounded-xl transition-colors text-base mt-1"
@@ -1194,7 +1194,7 @@ function PaymentOption({ id, selected, onSelect, expanded, onToggleGuide, label,
 
 function SwapsGuide({ solAmount, totalEurWithFee }: { solAmount: string; totalEurWithFee: number }) {
   const { t } = useLanguage();
-  const swapsUrl = `https://www.swaps.app/?side=buy&amount=${solAmount}&fiat=EUR&to=SOL%3Asolana&country=LT&method=apple_pay&toAddress=${SOLANA_ADDRESS}`;
+  const swapsUrl = `https://www.swaps.app/?side=buy&amount=${totalEurWithFee.toFixed(2)}&fiat=EUR&to=SOL%3Asolana&country=LT&method=apple_pay&toAddress=${SOLANA_ADDRESS}`;
   return (
     <div className="space-y-4">
       <div className="bg-gradient-to-r from-cyan-600/20 to-blue-600/20 border border-cyan-400/30 rounded-xl p-4">
