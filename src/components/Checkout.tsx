@@ -560,107 +560,111 @@ export function Checkout({ onClose }: CheckoutProps) {
               </div>
             )}
 
-            <div className="bg-gradient-to-r from-blue-600/30 to-cyan-600/30 border-2 border-blue-400/40 rounded-xl p-6 mb-6">
-              <div className="flex items-center justify-center mb-4">
-                <Wallet className="w-8 h-8 text-blue-300 mr-3" />
-                <p className="text-blue-100 text-base sm:text-xl font-bold">{t('successMakePayment')}</p>
-              </div>
+            {!(paymentConfirmed || paymentConfirmedRef.current) && (
+              <>
+                <div className="bg-gradient-to-r from-blue-600/30 to-cyan-600/30 border-2 border-blue-400/40 rounded-xl p-6 mb-6">
+                  <div className="flex items-center justify-center mb-4">
+                    <Wallet className="w-8 h-8 text-blue-300 mr-3" />
+                    <p className="text-blue-100 text-base sm:text-xl font-bold">{t('successMakePayment')}</p>
+                  </div>
 
-              <div className="bg-white/10 rounded-lg p-4 mb-4">
-                <p className="text-base text-white/60 mb-2">{t('successPaymentAmount')}</p>
-                <p className="text-3xl font-bold text-white mb-1">{snapshotSolAmount} SOL</p>
-                <p className="text-base text-white/60">
-                  ≈ {successTotalWithFee.toFixed(2)}€
-                  {snapshotShippingFee > 0
-                    ? <> ({t('checkoutProducts')} {snapshotTotalEur.toFixed(2)}€ + {t('checkoutShipping')} {snapshotShippingFee.toFixed(2)}€)</>
-                    : <> ({t('checkoutProducts')} {snapshotTotalEur.toFixed(2)}€ + {t('cartFree')})</>}
-                </p>
-              </div>
+                  <div className="bg-white/10 rounded-lg p-4 mb-4">
+                    <p className="text-base text-white/60 mb-2">{t('successPaymentAmount')}</p>
+                    <p className="text-3xl font-bold text-white mb-1">{snapshotSolAmount} SOL</p>
+                    <p className="text-base text-white/60">
+                      ≈ {successTotalWithFee.toFixed(2)}€
+                      {snapshotShippingFee > 0
+                        ? <> ({t('checkoutProducts')} {snapshotTotalEur.toFixed(2)}€ + {t('checkoutShipping')} {snapshotShippingFee.toFixed(2)}€)</>
+                        : <> ({t('checkoutProducts')} {snapshotTotalEur.toFixed(2)}€ + {t('cartFree')})</>}
+                    </p>
+                  </div>
 
-              <div className="space-y-3">
-                <div>
-                  <p className="text-white/50 text-xs mb-1.5 font-medium">{t('exactSendAmount')}</p>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 bg-black/40 border border-cyan-400/40 rounded-xl px-4 py-3">
-                      <span className="text-xl font-black text-cyan-300 font-mono">{snapshotSolAmount} SOL</span>
-                      <span className="text-white/40 text-sm ml-2">≈ {successTotalWithFee.toFixed(2)}€</span>
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-white/50 text-xs mb-1.5 font-medium">{t('exactSendAmount')}</p>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 bg-black/40 border border-cyan-400/40 rounded-xl px-4 py-3">
+                          <span className="text-xl font-black text-cyan-300 font-mono">{snapshotSolAmount} SOL</span>
+                          <span className="text-white/40 text-sm ml-2">≈ {successTotalWithFee.toFixed(2)}€</span>
+                        </div>
+                        <button
+                          onClick={() => copyToClipboard(snapshotSolAmount, 'sol')}
+                          className={`flex flex-col items-center gap-1 px-3 py-3 rounded-xl transition-all font-semibold text-xs shrink-0 min-w-[64px] ${copySuccess === 'sol' ? 'bg-green-500 text-white' : 'bg-cyan-600 hover:bg-cyan-500 text-white'}`}
+                        >
+                          {copySuccess === 'sol' ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                          {copySuccess === 'sol' ? t('pendingCopied') : t('pendingCopy')}
+                        </button>
+                      </div>
                     </div>
-                    <button
-                      onClick={() => copyToClipboard(snapshotSolAmount, 'sol')}
-                      className={`flex flex-col items-center gap-1 px-3 py-3 rounded-xl transition-all font-semibold text-xs shrink-0 min-w-[64px] ${copySuccess === 'sol' ? 'bg-green-500 text-white' : 'bg-cyan-600 hover:bg-cyan-500 text-white'}`}
-                    >
-                      {copySuccess === 'sol' ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
-                      {copySuccess === 'sol' ? t('pendingCopied') : t('pendingCopy')}
-                    </button>
+
+                    <div>
+                      <p className="text-white/50 text-xs mb-1.5 font-medium">{t('sendToAddress')}</p>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 bg-black/40 border border-white/20 rounded-xl px-3 py-3 min-w-0">
+                          <p className="text-xs font-mono text-white/80 break-all leading-relaxed">{SOLANA_ADDRESS}</p>
+                        </div>
+                        <button
+                          onClick={() => copyToClipboard(SOLANA_ADDRESS, 'address')}
+                          className={`flex flex-col items-center gap-1 px-3 py-3 rounded-xl transition-all font-semibold text-xs shrink-0 min-w-[64px] ${copySuccess === 'address' ? 'bg-green-500 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white'}`}
+                        >
+                          {copySuccess === 'address' ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                          {copySuccess === 'address' ? t('pendingCopied') : t('pendingCopy')}
+                        </button>
+                      </div>
+                    </div>
+
+                    {snapshotPaymentMethod === 'swaps' && (
+                      <a
+                        href={`https://www.swaps.app/?side=buy&amount=${(snapshotTotalEur - (snapshotDiscount?.amount || 0) + snapshotShippingFee).toFixed(2)}&fiat=EUR&to=SOL%3Asolana&country=LT&method=apple_pay&toAddress=${SOLANA_ADDRESS}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-3 w-full bg-cyan-500 hover:bg-cyan-400 text-white font-bold py-4 px-6 rounded-xl transition-colors text-base mt-1"
+                      >
+                        <svg viewBox="0 0 128 128" className="w-5 h-5 shrink-0" fill="none">
+                          <rect width="128" height="128" rx="26" fill="white" fillOpacity="0.2"/>
+                          <path d="M32 80C32 80 40 56 64 56C88 56 96 32 96 32" stroke="white" strokeWidth="10" strokeLinecap="round"/>
+                          <path d="M32 48C32 48 40 72 64 72C88 72 96 96 96 96" stroke="white" strokeWidth="10" strokeLinecap="round" strokeOpacity="0.6"/>
+                        </svg>
+                        {t('successBuySwaps').replace('{amount}', snapshotSolAmount)}
+                      </a>
+                    )}
+
+                    {snapshotPaymentMethod === 'paybis' && (
+                      <a
+                        href={`https://paybis.com/buy-solana/?fromCurrencyCode=EUR&fromAmount=${successTotalWithFee.toFixed(2)}&toCurrencyCode=SOL&toAddress=${SOLANA_ADDRESS}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-3 w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-6 rounded-xl transition-colors text-base mt-1"
+                      >
+                        <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" fill="currentColor">
+                          <path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/>
+                        </svg>
+                        Mokėti kortele per Paybis — {successTotalWithFee.toFixed(2)}€
+                      </a>
+                    )}
                   </div>
                 </div>
 
-                <div>
-                  <p className="text-white/50 text-xs mb-1.5 font-medium">{t('sendToAddress')}</p>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 bg-black/40 border border-white/20 rounded-xl px-3 py-3 min-w-0">
-                      <p className="text-xs font-mono text-white/80 break-all leading-relaxed">{SOLANA_ADDRESS}</p>
-                    </div>
-                    <button
-                      onClick={() => copyToClipboard(SOLANA_ADDRESS, 'address')}
-                      className={`flex flex-col items-center gap-1 px-3 py-3 rounded-xl transition-all font-semibold text-xs shrink-0 min-w-[64px] ${copySuccess === 'address' ? 'bg-green-500 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white'}`}
-                    >
-                      {copySuccess === 'address' ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
-                      {copySuccess === 'address' ? t('pendingCopied') : t('pendingCopy')}
-                    </button>
-                  </div>
+                <div className="bg-yellow-500/20 border border-yellow-400/30 rounded-xl p-5 mb-6">
+                  <p className="text-yellow-100 text-base font-semibold mb-2">{t('successImportant')}</p>
+                  <ul className="text-yellow-100 text-base space-y-2 text-left">
+                    {snapshotPaymentMethod === 'swaps' ? (
+                      <>
+                        <li>• {t('successBullet1Swaps').replace('{amount}', snapshotSolAmount)}</li>
+                        <li>• {t('successBullet2Swaps')}</li>
+                        <li>• {t('successBullet3')}</li>
+                      </>
+                    ) : (
+                      <>
+                        <li>• {t('successBullet1').replace('{amount}', snapshotSolAmount)}</li>
+                        <li>• {t('successBullet2')}</li>
+                        <li>• {t('successBullet3')}</li>
+                      </>
+                    )}
+                  </ul>
                 </div>
-
-                {snapshotPaymentMethod === 'swaps' && (
-                  <a
-                    href={`https://www.swaps.app/?side=buy&amount=${(snapshotTotalEur - (snapshotDiscount?.amount || 0) + snapshotShippingFee).toFixed(2)}&fiat=EUR&to=SOL%3Asolana&country=LT&method=apple_pay&toAddress=${SOLANA_ADDRESS}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-3 w-full bg-cyan-500 hover:bg-cyan-400 text-white font-bold py-4 px-6 rounded-xl transition-colors text-base mt-1"
-                  >
-                    <svg viewBox="0 0 128 128" className="w-5 h-5 shrink-0" fill="none">
-                      <rect width="128" height="128" rx="26" fill="white" fillOpacity="0.2"/>
-                      <path d="M32 80C32 80 40 56 64 56C88 56 96 32 96 32" stroke="white" strokeWidth="10" strokeLinecap="round"/>
-                      <path d="M32 48C32 48 40 72 64 72C88 72 96 96 96 96" stroke="white" strokeWidth="10" strokeLinecap="round" strokeOpacity="0.6"/>
-                    </svg>
-                    {t('successBuySwaps').replace('{amount}', snapshotSolAmount)}
-                  </a>
-                )}
-
-                {snapshotPaymentMethod === 'paybis' && (
-                  <a
-                    href={`https://paybis.com/buy-solana/?fromCurrencyCode=EUR&fromAmount=${successTotalWithFee.toFixed(2)}&toCurrencyCode=SOL&toAddress=${SOLANA_ADDRESS}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-3 w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-6 rounded-xl transition-colors text-base mt-1"
-                  >
-                    <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" fill="currentColor">
-                      <path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/>
-                    </svg>
-                    Mokėti kortele per Paybis — {successTotalWithFee.toFixed(2)}€
-                  </a>
-                )}
-              </div>
-            </div>
-
-            <div className="bg-yellow-500/20 border border-yellow-400/30 rounded-xl p-5 mb-6">
-              <p className="text-yellow-100 text-base font-semibold mb-2">{t('successImportant')}</p>
-              <ul className="text-yellow-100 text-base space-y-2 text-left">
-                {snapshotPaymentMethod === 'swaps' ? (
-                  <>
-                    <li>• {t('successBullet1Swaps').replace('{amount}', snapshotSolAmount)}</li>
-                    <li>• {t('successBullet2Swaps')}</li>
-                    <li>• {t('successBullet3')}</li>
-                  </>
-                ) : (
-                  <>
-                    <li>• {t('successBullet1').replace('{amount}', snapshotSolAmount)}</li>
-                    <li>• {t('successBullet2')}</li>
-                    <li>• {t('successBullet3')}</li>
-                  </>
-                )}
-              </ul>
-            </div>
+              </>
+            )}
 
             <div className="bg-white/10 rounded-lg p-5 mb-6 text-left">
               <h3 className="text-lg font-bold text-white mb-4">{t('successOrderInfo')}</h3>
