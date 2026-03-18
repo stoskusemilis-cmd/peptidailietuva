@@ -44,7 +44,8 @@ Deno.serve(async (req: Request) => {
       .maybeSingle();
 
     if (error || !order) {
-      return new Response(JSON.stringify({ error: "Order not found" }), {
+      console.error("Order fetch error:", error, "order_id:", order_id);
+      return new Response(JSON.stringify({ error: "Order not found", detail: String(error) }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -72,6 +73,15 @@ Deno.serve(async (req: Request) => {
       ? "NEMOKAMAS"
       : `${Number(pricing.shipping_fee_eur || 0).toFixed(2)}€`;
 
+    const paymentMethodLabel = (m: string) => {
+      if (m === 'swaps') return 'Swaps.app';
+      if (m === 'phantom') return 'Phantom Wallet';
+      if (m === 'trust') return 'Trust Wallet';
+      if (m === 'revolut') return 'Revolut';
+      if (m === 'paybis') return 'Paybis';
+      return m || '—';
+    };
+
     const htmlBody = `
 <!DOCTYPE html>
 <html>
@@ -87,12 +97,16 @@ Deno.serve(async (req: Request) => {
     <div style="background:#052e16;border:2px solid #16a34a;border-radius:16px;padding:20px;margin-bottom:20px;text-align:center;">
       <p style="margin:0 0 4px;font-size:22px;font-weight:900;color:#4ade80;">MOKEJIMAS PATVIRTINTAS</p>
       <p style="margin:0;color:#86efac;font-size:14px;">Uzsakymas #${order.order_number} — tikslus mokejimas gautas</p>
-    </div>` : ''}
+    </div>` : `
+    <div style="background:#0d2137;border:2px solid #1d4ed8;border-radius:16px;padding:20px;margin-bottom:20px;text-align:center;">
+      <p style="margin:0 0 4px;font-size:22px;font-weight:900;color:#93c5fd;">NAUJAS UZSAKYMAS</p>
+      <p style="margin:0;color:#bfdbfe;font-size:14px;">Uzsakymas #${order.order_number} — laukiama mokejimo</p>
+    </div>`}
 
     <div style="background:#0a1929;border:1px solid #1e3a5f;border-radius:16px;padding:24px;margin-bottom:20px;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
         <h2 style="margin:0;font-size:18px;color:#22d3ee;">Užsakymas #${order.order_number}</h2>
-        <span style="background:${isPaymentConfirmed ? '#16a34a' : '#1e3a5f'};color:${isPaymentConfirmed ? '#bbf7d0' : '#93c5fd'};padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;">${isPaymentConfirmed ? 'APMOKETA' : 'NAUJAS'}</span>
+        <span style="background:${isPaymentConfirmed ? '#16a34a' : '#1e3a5f'};color:${isPaymentConfirmed ? '#bbf7d0' : '#93c5fd'};padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;">${isPaymentConfirmed ? 'APMOKETA' : 'LAUKIAMA'}</span>
       </div>
       <p style="margin:0;color:#94a3b8;font-size:13px;">${new Date(order.created_at).toLocaleString("lt-LT", { timeZone: "Europe/Vilnius" })}</p>
     </div>
@@ -104,7 +118,7 @@ Deno.serve(async (req: Request) => {
         <tr><td style="padding:6px 0;color:#64748b;">Miestas:</td><td style="padding:6px 0;color:#fff;">${escapeHtml(order.customer_city) || "—"}</td></tr>
         <tr><td style="padding:6px 0;color:#64748b;">Paštomatas:</td><td style="padding:6px 0;color:#fff;">${locker ? `${escapeHtml(locker.provider)} — ${escapeHtml(locker.address)}${locker.locker_code ? ` (kodas: ${escapeHtml(locker.locker_code)})` : ""}` : "—"}</td></tr>
         <tr><td style="padding:6px 0;color:#64748b;">Nuolaidos kodas:</td><td style="padding:6px 0;${pricing.discount_code ? 'color:#4ade80;font-weight:700;' : 'color:#fff;'}">${escapeHtml(pricing.discount_code) || "—"}</td></tr>
-        <tr><td style="padding:6px 0;color:#64748b;">Mokėjimo būdas:</td><td style="padding:6px 0;color:#fff;">${escapeHtml(details.payment_method) || "—"}</td></tr>
+        <tr><td style="padding:6px 0;color:#64748b;">Mokėjimo būdas:</td><td style="padding:6px 0;color:#fff;">${paymentMethodLabel(escapeHtml(details.payment_method))}</td></tr>
       </table>
     </div>
 
@@ -125,7 +139,7 @@ Deno.serve(async (req: Request) => {
           ${discountRow}
           <tr><td colspan="3" style="padding:6px 12px;color:#94a3b8;">Pristatymas:</td><td style="padding:6px 12px;text-align:right;color:#fff;">${shippingLabel}</td></tr>
           <tr style="background:#0d2137;"><td colspan="3" style="padding:10px 12px;color:#22d3ee;font-weight:700;font-size:16px;">VISO:</td><td style="padding:10px 12px;text-align:right;color:#22d3ee;font-weight:700;font-size:16px;">${Number(order.total_amount || 0).toFixed(2)}€</td></tr>
-          <tr><td colspan="3" style="padding:6px 12px;color:#64748b;font-size:12px;">SOL suma:</td><td style="padding:6px 12px;text-align:right;color:#93c5fd;font-family:monospace;">${Number(order.crypto_amount || 0).toFixed(4)} SOL</td></tr>
+          <tr><td colspan="3" style="padding:6px 12px;color:#64748b;font-size:12px;">SOL suma:</td><td style="padding:6px 12px;text-align:right;color:#93c5fd;font-family:monospace;font-weight:700;">${Number(order.crypto_amount || 0).toFixed(4)} SOL</td></tr>
         </tfoot>
       </table>
     </div>
@@ -154,6 +168,7 @@ Deno.serve(async (req: Request) => {
     <div style="background:#0a1929;border:1px solid #1e3a5f;border-radius:16px;padding:20px;margin-bottom:20px;">
       <h3 style="margin:0 0 12px;font-size:13px;color:#64748b;text-transform:uppercase;letter-spacing:1px;">Solana mokėjimo informacija</h3>
       <p style="margin:0 0 8px;color:#94a3b8;font-size:13px;">Mokėjimo statusas: <span style="color:${order.payment_status === 'paid' ? '#4ade80' : '#fbbf24'};font-weight:700;">${order.payment_status === 'paid' ? 'PATVIRTINTAS' : 'LAUKIAMA'}</span></p>
+      <p style="margin:0 0 6px;color:#94a3b8;font-size:13px;">Tiksliai siųsti: <span style="color:#93c5fd;font-family:monospace;font-weight:700;">${Number(order.crypto_amount || 0).toFixed(4)} SOL</span></p>
       <p style="margin:0;color:#64748b;font-size:11px;font-family:monospace;word-break:break-all;">Wallet: A8CDFpdaLuzfZWDX2xbCXf8nXSJpz3K5urqTPGL126ai</p>
     </div>
 
@@ -186,9 +201,10 @@ Deno.serve(async (req: Request) => {
         body: JSON.stringify({
           from: "Peptidai Lietuva <onboarding@resend.dev>",
           to: ["peptidailietuva@gmail.com"],
+          reply_to: "peptidailietuva@gmail.com",
           subject: isPaymentConfirmed
-            ? `APMOKETA #${order.order_number} — ${Number(order.total_amount).toFixed(2)}€ gauta!`
-            : `Naujas užsakymas #${order.order_number} — ${Number(order.total_amount).toFixed(2)}€`,
+            ? `✅ APMOKETA #${order.order_number} — ${Number(order.total_amount).toFixed(2)}€ gauta!`
+            : `🆕 Naujas užsakymas #${order.order_number} — ${Number(order.total_amount).toFixed(2)}€ (laukiama mokejimo)`,
           html: htmlBody,
         }),
         signal: emailController.signal,
@@ -198,8 +214,9 @@ Deno.serve(async (req: Request) => {
     }
 
     const emailData = await emailRes.json();
+    console.log("Resend response:", emailRes.status, JSON.stringify(emailData));
 
-    return new Response(JSON.stringify({ sent: emailRes.ok, resend: emailData }), {
+    return new Response(JSON.stringify({ sent: emailRes.ok, status: emailRes.status, resend: emailData }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
