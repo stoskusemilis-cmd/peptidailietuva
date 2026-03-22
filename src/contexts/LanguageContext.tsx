@@ -13,7 +13,7 @@ const translations: Record<Language, Record<string, string>> = {
     // Header
     cart: 'Krepšelis',
     // Hero
-    heroSubtitle: 'Aukščiausios kokybės Peptidai. Patikimi pardavėjai Lietuvoje jau daugiau nei pusmetį.',
+    heroSubtitle: 'Aukščiausios kokybės Peptidai. Pirmieji tiekėjai Lietuvoje nuo 2025m.',
     heroStat1: 'Šimtai patenkintų klientų',
     heroStat2: 'Greitas pristatymas visoje LT',
     heroStat3: '100% anonimiškas pirkimas',
