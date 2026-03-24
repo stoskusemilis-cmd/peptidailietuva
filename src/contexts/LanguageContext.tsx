@@ -21,7 +21,7 @@ const translations: Record<Language, Record<string, string>> = {
     loading: 'Kraunami produktai...',
     // About
     aboutTitle: 'Apie mus',
-    aboutSubtitle: 'Patikimiausia Peptidų ir Steroidų parduotuvė Lietuvoje',
+    aboutSubtitle: 'Patikimiausia Peptidų ir preparatų parduotuvė Lietuvoje',
     aboutText1: 'Nuo 2025 metų teikiame aukščiausios kokybės peptidus Lietuvos klientams.',
     aboutText2: 'Per šį laiką užsitarnavome šimtų klientų pasitikėjimą. Kiekvienas produktas tikrinamas ir siunčiamas rūpestingai, užtikrinant greitą ir saugų pristatymą.',
     aboutSlogan: 'Peptidai — ateities medicina.',
@@ -308,7 +308,7 @@ const translations: Record<Language, Record<string, string>> = {
     loading: 'Loading products...',
     // About
     aboutTitle: 'About us',
-    aboutSubtitle: 'The most trusted Peptides & Steroids store in Lithuania',
+    aboutSubtitle: 'The most trusted Peptides & preparations store in Lithuania',
     aboutText1: 'Since 2025 we have been providing the highest quality peptides to Lithuanian customers.',
     aboutText2: 'In this time we have earned the trust of hundreds of customers. Each product is carefully checked and shipped, ensuring discreet and fast delivery.',
     aboutSlogan: 'Peptides — the medicine of the future.',
@@ -595,7 +595,7 @@ const translations: Record<Language, Record<string, string>> = {
     loading: 'Загрузка товаров...',
     // About
     aboutTitle: 'О нас',
-    aboutSubtitle: 'Самый надёжный магазин пептидов и стероидов в Литве',
+    aboutSubtitle: 'Самый надёжный магазин пептидов и препаратов в Литве',
     aboutText1: 'С 2025 года мы предоставляем пептиды высочайшего качества клиентам Литвы.',
     aboutText2: 'За это время мы завоевали доверие сотен клиентов. Каждый товар тщательно проверяется и упаковывается, обеспечивая дискретную и быструю доставку.',
     aboutSlogan: 'Пептиды — медицина будущего.',
