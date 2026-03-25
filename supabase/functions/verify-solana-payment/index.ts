@@ -112,11 +112,12 @@ Deno.serve(async (req: Request) => {
     }
 
     const orderCreatedAt = new Date(order.created_at).getTime() / 1000;
+    const lookbackSeconds = 30 * 60;
 
     const allSignatures = await getRecentTransactions(100);
 
     const candidateSignatures = allSignatures.filter(
-      (s) => s.err === null && s.blockTime != null && s.blockTime >= orderCreatedAt
+      (s) => s.err === null && s.blockTime != null && s.blockTime >= (orderCreatedAt - lookbackSeconds)
     );
 
     const windowStart = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
