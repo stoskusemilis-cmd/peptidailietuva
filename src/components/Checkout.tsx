@@ -63,7 +63,7 @@ export function Checkout({ onClose }: CheckoutProps) {
   const totalEur = getTotalPrice();
   const discountAmount = appliedDiscount ? parseFloat((totalEur * appliedDiscount.percent / 100).toFixed(2)) : 0;
   const discountedTotal = totalEur - discountAmount;
-  const shippingFee = totalEur >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE_EUR;
+  const shippingFee = discountedTotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE_EUR;
   const totalEurWithFee = discountedTotal + shippingFee;
   const activeSolPrice = lockedSolPrice ?? solPrice;
   const baseSolAmount = parseFloat((totalEurWithFee / activeSolPrice).toFixed(4));
@@ -251,6 +251,7 @@ export function Checkout({ onClose }: CheckoutProps) {
 
   const handleConfirmPayment = async () => {
     if (!selectedPayment) return;
+    if (cart.length === 0) return;
     if (submittingRef.current) return;
     submittingRef.current = true;
     setLoading(true);

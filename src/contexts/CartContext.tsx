@@ -1,5 +1,23 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Product, CartItem } from '../lib/supabase';
+
+const CART_STORAGE_KEY = 'pl_cart';
+
+function loadCart(): CartItem[] {
+  try {
+    const raw = localStorage.getItem(CART_STORAGE_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw) as CartItem[];
+  } catch {
+    return [];
+  }
+}
+
+function saveCart(cart: CartItem[]) {
+  try {
+    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+  } catch {}
+}
 
 interface CartContextType {
   cart: CartItem[];
@@ -14,7 +32,11 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const [cart, setCart] = useState<CartItem[]>(loadCart);
+
+  useEffect(() => {
+    saveCart(cart);
+  }, [cart]);
 
   const addToCart = (product: Product, quantity = 1) => {
     setCart((prevCart) => {
@@ -61,9 +83,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const items = cartItems ?? cart;
     return items.reduce((total, item) => {
       if (item.product.price_tiers && item.product.price_tiers.length > 0) {
-        const tier = item.product.price_tiers.find(t => t.quantity === item.quantity);
+        const sortedTiers = [...item.product.price_tiers].sort((a, b) => b.quantity - a.quantity);
+        const tier = sortedTiers.find(t => item.quantity >= t.quantity);
         if (tier) {
-          return total + tier.price;
+          const unitPrice = tier.price / tier.quantity;
+          return total + unitPrice * item.quantity;
         }
       }
       return total + item.product.price * item.quantity;

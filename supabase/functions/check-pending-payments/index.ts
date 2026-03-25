@@ -11,57 +11,80 @@ const SOLANA_ADDRESS = "A8CDFpdaLuzfZWDX2xbCXf8nXSJpz3K5urqTPGL126ai";
 const LAMPORTS_PER_SOL = 1_000_000_000;
 const TOLERANCE = 0.00005;
 const RPC_URL = "https://api.mainnet-beta.solana.com";
+const HELIUS_RPC = Deno.env.get("HELIUS_RPC_URL") ?? "";
 
-async function rpcFetch(body: object): Promise<Response> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15000);
-  try {
-    return await fetch(RPC_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-      signal: controller.signal,
-    });
-  } finally {
-    clearTimeout(timeout);
+async function rpcFetch(body: object, retries = 3): Promise<Response> {
+  const urls = [RPC_URL, ...(HELIUS_RPC ? [HELIUS_RPC] : [])];
+  let lastErr: unknown;
+  for (let attempt = 0; attempt < retries; attempt++) {
+    const url = urls[attempt % urls.length];
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 12000);
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+      if (res.status === 429) {
+        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+        continue;
+      }
+      return res;
+    } catch (err) {
+      lastErr = err;
+      if (attempt < retries - 1) await new Promise(r => setTimeout(r, 600 * (attempt + 1)));
+    } finally {
+      clearTimeout(timeout);
+    }
   }
+  throw lastErr;
 }
 
 async function getRecentTransactions(limit = 200): Promise<Array<{ signature: string; blockTime: number | null; err: null | object }>> {
-  const res = await rpcFetch({
-    jsonrpc: "2.0",
-    id: 1,
-    method: "getSignaturesForAddress",
-    params: [SOLANA_ADDRESS, { limit }],
-  });
-  const data = await res.json();
-  return data?.result ?? [];
+  try {
+    const res = await rpcFetch({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "getSignaturesForAddress",
+      params: [SOLANA_ADDRESS, { limit }],
+    });
+    const data = await res.json();
+    return data?.result ?? [];
+  } catch {
+    return [];
+  }
 }
 
 async function getTransactionAmount(signature: string): Promise<{ receivedSol: number } | null> {
-  const res = await rpcFetch({
-    jsonrpc: "2.0",
-    id: 1,
-    method: "getTransaction",
-    params: [signature, { encoding: "jsonParsed", maxSupportedTransactionVersion: 0 }],
-  });
-  const data = await res.json();
-  const tx = data?.result;
-  if (!tx) return null;
+  try {
+    const res = await rpcFetch({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "getTransaction",
+      params: [signature, { encoding: "jsonParsed", maxSupportedTransactionVersion: 0 }],
+    });
+    const data = await res.json();
+    const tx = data?.result;
+    if (!tx) return null;
 
-  const accountKeys: string[] = tx.transaction?.message?.accountKeys?.map(
-    (k: { pubkey?: string } | string) => (typeof k === "string" ? k : k.pubkey ?? "")
-  ) ?? [];
+    const accountKeys: string[] = tx.transaction?.message?.accountKeys?.map(
+      (k: { pubkey?: string } | string) => (typeof k === "string" ? k : k.pubkey ?? "")
+    ) ?? [];
 
-  const recipientIndex = accountKeys.indexOf(SOLANA_ADDRESS);
-  if (recipientIndex === -1) return null;
+    const recipientIndex = accountKeys.indexOf(SOLANA_ADDRESS);
+    if (recipientIndex === -1) return null;
 
-  const preBalances: number[] = tx.meta?.preBalances ?? [];
-  const postBalances: number[] = tx.meta?.postBalances ?? [];
-  const receivedLamports = (postBalances[recipientIndex] ?? 0) - (preBalances[recipientIndex] ?? 0);
-  const receivedSol = receivedLamports / LAMPORTS_PER_SOL;
+    const preBalances: number[] = tx.meta?.preBalances ?? [];
+    const postBalances: number[] = tx.meta?.postBalances ?? [];
+    const receivedLamports = (postBalances[recipientIndex] ?? 0) - (preBalances[recipientIndex] ?? 0);
+    const receivedSol = receivedLamports / LAMPORTS_PER_SOL;
 
-  return { receivedSol };
+    return { receivedSol };
+  } catch {
+    return null;
+  }
 }
 
 Deno.serve(async (req: Request) => {
@@ -83,21 +106,37 @@ Deno.serve(async (req: Request) => {
       .gte("created_at", cutoff)
       .order("created_at", { ascending: false });
 
-    if (pendingError || !pendingOrders || pendingOrders.length === 0) {
+    if (pendingError) {
+      console.error("Failed to fetch pending orders:", pendingError);
+      return new Response(JSON.stringify({ error: String(pendingError) }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (!pendingOrders || pendingOrders.length === 0) {
       return new Response(JSON.stringify({ checked: 0, confirmed: 0 }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    console.log(`Checking ${pendingOrders.length} pending orders`);
+
     const allSignatures = await getRecentTransactions(200);
     const validSignatures = allSignatures.filter((s) => s.err === null && s.blockTime != null);
 
-    const windowStart = new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString();
+    if (validSignatures.length === 0) {
+      console.log("No valid signatures from RPC");
+      return new Response(JSON.stringify({ checked: pendingOrders.length, confirmed: 0, rpc_empty: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { data: paidOrders } = await supabase
       .from("orders")
       .select("transaction_signature")
       .eq("payment_status", "paid")
-      .gte("payment_confirmed_at", windowStart)
+      .gte("created_at", cutoff)
       .not("transaction_signature", "is", null);
 
     const usedSignatures = new Set(
@@ -110,19 +149,20 @@ Deno.serve(async (req: Request) => {
 
     for (const order of pendingOrders) {
       const expectedSol = parseFloat(order.crypto_amount);
-      if (isNaN(expectedSol) || expectedSol <= 0) continue;
+      if (isNaN(expectedSol) || expectedSol <= 0 || !isFinite(expectedSol)) continue;
 
       const orderCreatedAtSec = new Date(order.created_at).getTime() / 1000;
       const lookbackSec = 72 * 60 * 60;
 
       const candidates = validSignatures.filter(
-        (s) => s.blockTime! >= (orderCreatedAtSec - 300) && s.blockTime! <= (orderCreatedAtSec + lookbackSec)
+        (s) =>
+          !usedSignatures.has(s.signature) &&
+          s.blockTime! >= (orderCreatedAtSec - 300) &&
+          s.blockTime! <= (orderCreatedAtSec + lookbackSec)
       );
 
       let matched = false;
       for (const sig of candidates) {
-        if (usedSignatures.has(sig.signature)) continue;
-
         const txInfo = await getTransactionAmount(sig.signature);
         if (!txInfo || txInfo.receivedSol <= 0) continue;
 
@@ -144,6 +184,7 @@ Deno.serve(async (req: Request) => {
           if (updated) {
             usedSignatures.add(sig.signature);
             matched = true;
+            console.log(`Confirmed order ${order.order_number} with tx ${sig.signature}`);
 
             try {
               const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -172,12 +213,14 @@ Deno.serve(async (req: Request) => {
     }
 
     const confirmedCount = results.filter((r) => r.confirmed).length;
+    console.log(`Done: checked ${pendingOrders.length}, confirmed ${confirmedCount}`);
 
     return new Response(
       JSON.stringify({ checked: pendingOrders.length, confirmed: confirmedCount, results }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
+    console.error("check-pending-payments error:", err);
     return new Response(JSON.stringify({ error: String(err) }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -1,4 +1,14 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+
+const LANG_STORAGE_KEY = 'pl_lang';
+
+function loadLang(): Language {
+  try {
+    const stored = localStorage.getItem(LANG_STORAGE_KEY) as Language | null;
+    if (stored && ['lt', 'en', 'ru'].includes(stored)) return stored;
+  } catch {}
+  return 'lt';
+}
 
 export type Language = 'lt' | 'en' | 'ru';
 
@@ -875,7 +885,12 @@ const translations: Record<Language, Record<string, string>> = {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [lang, setLang] = useState<Language>('lt');
+  const [lang, setLangState] = useState<Language>(loadLang);
+
+  const setLang = useCallback((l: Language) => {
+    try { localStorage.setItem(LANG_STORAGE_KEY, l); } catch {}
+    setLangState(l);
+  }, []);
 
   const t = (key: string): string => {
     return translations[lang][key] ?? translations['lt'][key] ?? key;
