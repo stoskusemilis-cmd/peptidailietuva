@@ -27,7 +27,7 @@ async function rpcFetch(body: object): Promise<Response> {
   }
 }
 
-async function getRecentTransactions(limit = 100): Promise<Array<{ signature: string; blockTime: number | null; err: null | object }>> {
+async function getRecentTransactions(limit = 200): Promise<Array<{ signature: string; blockTime: number | null; err: null | object }>> {
   const res = await rpcFetch({
     jsonrpc: "2.0",
     id: 1,
@@ -112,9 +112,9 @@ Deno.serve(async (req: Request) => {
     }
 
     const orderCreatedAt = new Date(order.created_at).getTime() / 1000;
-    const lookbackSeconds = 30 * 60;
+    const lookbackSeconds = 72 * 60 * 60;
 
-    const allSignatures = await getRecentTransactions(100);
+    const allSignatures = await getRecentTransactions(200);
 
     const candidateSignatures = allSignatures.filter(
       (s) => s.err === null && s.blockTime != null && s.blockTime >= (orderCreatedAt - lookbackSeconds)
