@@ -67,7 +67,7 @@ export function Checkout({ onClose }: CheckoutProps) {
   const totalEurWithFee = discountedTotal + shippingFee;
   const activeSolPrice = lockedSolPrice ?? solPrice;
   const baseSolAmount = parseFloat((totalEurWithFee / activeSolPrice).toFixed(4));
-  const solAmount = (baseSolAmount + uniqueSolOffset).toFixed(4);
+  const solAmount = (baseSolAmount + uniqueSolOffset).toFixed(5);
 
   useEffect(() => {
     let active = true;
@@ -214,7 +214,6 @@ export function Checkout({ onClose }: CheckoutProps) {
   };
 
   const generateUniqueOffset = async (baseAmount: number): Promise<number> => {
-    const offsets = [0.0001, 0.0002, 0.0003, 0.0004, 0.0005, 0.0006, 0.0007, 0.0008, 0.0009];
     try {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -231,7 +230,8 @@ export function Checkout({ onClose }: CheckoutProps) {
         if (typeof data.offset === 'number') return data.offset;
       }
     } catch {}
-    return offsets[Math.floor(Math.random() * offsets.length)];
+    const fallback = (Math.floor(Math.random() * 99) + 1) * 0.00001;
+    return parseFloat(fallback.toFixed(5));
   };
 
   const handleInfoSubmit = async (e: React.FormEvent) => {
@@ -362,12 +362,12 @@ export function Checkout({ onClose }: CheckoutProps) {
       clearCart();
 
       if (selectedPayment === 'swaps') {
-        const swapsUrl = `https://www.swaps.app/?side=buy&amount=${totalEurWithFee.toFixed(2)}&fiat=EUR&to=SOL%3Asolana&country=LT&method=apple_pay&toAddress=${SOLANA_ADDRESS}`;
+        const swapsUrl = `https://www.swaps.app/?side=buy&amount=${solAmount}&to=SOL%3Asolana&country=LT&toAddress=${SOLANA_ADDRESS}`;
         window.open(swapsUrl, '_blank');
       }
 
       if (selectedPayment === 'paybis') {
-        const paybisUrl = `https://paybis.com/buy-solana/?fromCurrencyCode=EUR&fromAmount=${totalEurWithFee.toFixed(2)}&toCurrencyCode=SOL&toAddress=${SOLANA_ADDRESS}`;
+        const paybisUrl = `https://paybis.com/buy-solana/?fromCurrencyCode=EUR&toCurrencyCode=SOL&toAmount=${solAmount}&toAddress=${SOLANA_ADDRESS}`;
         window.open(paybisUrl, '_blank');
       }
 
@@ -457,7 +457,7 @@ export function Checkout({ onClose }: CheckoutProps) {
 
             {snapshotPaymentMethod === 'swaps' && (
               <a
-                href={`https://www.swaps.app/?side=buy&amount=${(snapshotTotalEur - (snapshotDiscount?.amount || 0) + snapshotShippingFee).toFixed(2)}&fiat=EUR&to=SOL%3Asolana&country=LT&method=apple_pay&toAddress=${SOLANA_ADDRESS}`}
+                href={`https://www.swaps.app/?side=buy&amount=${snapshotSolAmount}&to=SOL%3Asolana&country=LT&toAddress=${SOLANA_ADDRESS}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2 w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-3 px-5 rounded-xl mb-4 transition-colors text-sm"
@@ -473,7 +473,7 @@ export function Checkout({ onClose }: CheckoutProps) {
 
             {snapshotPaymentMethod === 'paybis' && (
               <a
-                href={`https://paybis.com/buy-solana/?fromCurrencyCode=EUR&fromAmount=${(snapshotTotalEur - (snapshotDiscount?.amount || 0) + snapshotShippingFee).toFixed(2)}&toCurrencyCode=SOL&toAddress=${SOLANA_ADDRESS}`}
+                href={`https://paybis.com/buy-solana/?fromCurrencyCode=EUR&toCurrencyCode=SOL&toAmount=${snapshotSolAmount}&toAddress=${SOLANA_ADDRESS}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2 w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-5 rounded-xl mb-4 transition-colors text-sm"
@@ -481,7 +481,7 @@ export function Checkout({ onClose }: CheckoutProps) {
                 <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" fill="currentColor">
                   <path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/>
                 </svg>
-                Mokėti kortele per Paybis — {(snapshotTotalEur - (snapshotDiscount?.amount || 0) + snapshotShippingFee).toFixed(2)}€
+                Mokėti per Paybis — {snapshotSolAmount} SOL
               </a>
             )}
 
@@ -616,7 +616,7 @@ export function Checkout({ onClose }: CheckoutProps) {
 
                     {snapshotPaymentMethod === 'swaps' && (
                       <a
-                        href={`https://www.swaps.app/?side=buy&amount=${(snapshotTotalEur - (snapshotDiscount?.amount || 0) + snapshotShippingFee).toFixed(2)}&fiat=EUR&to=SOL%3Asolana&country=LT&method=apple_pay&toAddress=${SOLANA_ADDRESS}`}
+                        href={`https://www.swaps.app/?side=buy&amount=${snapshotSolAmount}&to=SOL%3Asolana&country=LT&toAddress=${SOLANA_ADDRESS}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center justify-center gap-3 w-full bg-cyan-500 hover:bg-cyan-400 text-white font-bold py-4 px-6 rounded-xl transition-colors text-base mt-1"
@@ -632,7 +632,7 @@ export function Checkout({ onClose }: CheckoutProps) {
 
                     {snapshotPaymentMethod === 'paybis' && (
                       <a
-                        href={`https://paybis.com/buy-solana/?fromCurrencyCode=EUR&fromAmount=${successTotalWithFee.toFixed(2)}&toCurrencyCode=SOL&toAddress=${SOLANA_ADDRESS}`}
+                        href={`https://paybis.com/buy-solana/?fromCurrencyCode=EUR&toCurrencyCode=SOL&toAmount=${snapshotSolAmount}&toAddress=${SOLANA_ADDRESS}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center justify-center gap-3 w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-6 rounded-xl transition-colors text-base mt-1"
@@ -640,7 +640,7 @@ export function Checkout({ onClose }: CheckoutProps) {
                         <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" fill="currentColor">
                           <path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/>
                         </svg>
-                        Mokėti kortele per Paybis — {successTotalWithFee.toFixed(2)}€
+                        Mokėti per Paybis — {snapshotSolAmount} SOL
                       </a>
                     )}
                   </div>
@@ -983,7 +983,7 @@ export function Checkout({ onClose }: CheckoutProps) {
                         <circle cx="94" cy="71" r="7" fill="#F59E0B" fillOpacity="0.9"/>
                       </svg>
                     }
-                    guide={<PaybisGuide totalEurWithFee={totalEurWithFee} />}
+                    guide={<PaybisGuide solAmount={solAmount} totalEurWithFee={totalEurWithFee} />}
                   />
 
                   <PaymentOption
@@ -1199,9 +1199,9 @@ function PaymentOption({ selected, onSelect, expanded, onToggleGuide, label, bad
   );
 }
 
-function SwapsGuide({ solAmount, totalEurWithFee }: { solAmount: string; totalEurWithFee: number }) {
+function SwapsGuide({ solAmount }: { solAmount: string; totalEurWithFee: number }) {
   const { t } = useLanguage();
-  const swapsUrl = `https://www.swaps.app/?side=buy&amount=${totalEurWithFee.toFixed(2)}&fiat=EUR&to=SOL%3Asolana&country=LT&method=apple_pay&toAddress=${SOLANA_ADDRESS}`;
+  const swapsUrl = `https://www.swaps.app/?side=buy&amount=${solAmount}&to=SOL%3Asolana&country=LT&toAddress=${SOLANA_ADDRESS}`;
   return (
     <div className="space-y-4">
       <div className="bg-gradient-to-r from-cyan-600/20 to-blue-600/20 border border-cyan-400/30 rounded-xl p-4">
@@ -1401,8 +1401,8 @@ function RevolutGuide({ solAmount, totalEurWithFee }: { solAmount: string; total
   );
 }
 
-function PaybisGuide({ totalEurWithFee }: { totalEurWithFee: number }) {
-  const paybisUrl = `https://paybis.com/buy-solana/?fromCurrencyCode=EUR&fromAmount=${totalEurWithFee.toFixed(2)}&toCurrencyCode=SOL&toAddress=${SOLANA_ADDRESS}`;
+function PaybisGuide({ solAmount, totalEurWithFee }: { solAmount: string; totalEurWithFee: number }) {
+  const paybisUrl = `https://paybis.com/buy-solana/?fromCurrencyCode=EUR&toCurrencyCode=SOL&toAmount=${solAmount}&toAddress=${SOLANA_ADDRESS}`;
   return (
     <div className="space-y-4">
       <div className="bg-gradient-to-r from-blue-600/20 to-cyan-600/20 border border-blue-400/30 rounded-xl p-4">
@@ -1412,7 +1412,7 @@ function PaybisGuide({ totalEurWithFee }: { totalEurWithFee: number }) {
       <GuideStep number={1} title="Atidarykite Paybis">
         <div className="bg-white/10 rounded-lg p-3 space-y-2">
           <p className="text-white/80 text-base">• Spauskite mygtuką apačioje — suma jau užpildyta automatiškai</p>
-          <p className="text-white/80 text-base">• Bus rodoma: <span className="text-yellow-300 font-bold">{totalEurWithFee.toFixed(2)}€</span></p>
+          <p className="text-white/80 text-base">• Bus rodoma: <span className="text-yellow-300 font-bold">{solAmount} SOL</span> ({totalEurWithFee.toFixed(2)}€)</p>
           <p className="text-white/80 text-base">• Gavėjo adresas užpildytas automatiškai</p>
         </div>
       </GuideStep>
@@ -1420,7 +1420,7 @@ function PaybisGuide({ totalEurWithFee }: { totalEurWithFee: number }) {
         <div className="bg-white/10 rounded-lg p-3 space-y-2">
           <p className="text-white/80 text-base">• Įveskite savo kortelės duomenis</p>
           <p className="text-white/80 text-base">• Gali reikėti patvirtinti el. paštu arba SMS</p>
-          <p className="text-white/80 text-base">• Visa suma: <span className="text-yellow-300 font-bold">{totalEurWithFee.toFixed(2)}€</span></p>
+          <p className="text-white/80 text-base">• Tiksliai: <span className="text-yellow-300 font-bold">{solAmount} SOL</span> ({totalEurWithFee.toFixed(2)}€)</p>
         </div>
         <div className="bg-green-500/20 border border-green-400/30 rounded-lg p-3 mt-2">
           <p className="text-green-300 text-sm font-semibold">SOL bus automatiškai nusiųstas tiesiai mums.</p>
@@ -1442,7 +1442,7 @@ function PaybisGuide({ totalEurWithFee }: { totalEurWithFee: number }) {
         <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" fill="currentColor">
           <path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/>
         </svg>
-        Mokėti {totalEurWithFee.toFixed(2)}€ kortele per Paybis
+        Mokėti {solAmount} SOL kortele per Paybis
       </a>
     </div>
   );

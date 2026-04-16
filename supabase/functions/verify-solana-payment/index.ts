@@ -9,7 +9,7 @@ const corsHeaders = {
 
 const SOLANA_ADDRESS = "A8CDFpdaLuzfZWDX2xbCXf8nXSJpz3K5urqTPGL126ai";
 const LAMPORTS_PER_SOL = 1_000_000_000;
-const TOLERANCE = 0.00005;
+const TOLERANCE = 0.000005;
 const RPC_URL = "https://api.mainnet-beta.solana.com";
 const HELIUS_RPC = Deno.env.get("HELIUS_RPC_URL") ?? "";
 
