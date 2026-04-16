@@ -4,12 +4,12 @@ import { useLanguage } from '../contexts/LanguageContext';
 
 interface ProductCardProps {
   product: Product;
-  onAddToCart: (product: Product) => void;
+  onAddToCart?: (product: Product) => void;
   onViewDetails: (product: Product) => void;
   onQuickAdd: (product: Product) => void;
 }
 
-export function ProductCard({ product, onAddToCart, onViewDetails, onQuickAdd }: ProductCardProps) {
+export function ProductCard({ product, onViewDetails, onQuickAdd }: ProductCardProps) {
   const imageSrc = product.image_url || null;
   const { t, lang } = useLanguage();
 

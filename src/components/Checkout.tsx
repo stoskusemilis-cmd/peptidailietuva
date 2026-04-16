@@ -1161,7 +1161,7 @@ interface PaymentOptionProps {
   guide: React.ReactNode;
 }
 
-function PaymentOption({ id, selected, onSelect, expanded, onToggleGuide, label, badge, badgeColor, badgeTextColor = 'text-white', howLabel, icon, guide }: PaymentOptionProps) {
+function PaymentOption({ selected, onSelect, expanded, onToggleGuide, label, badge, badgeColor, badgeTextColor = 'text-white', howLabel, icon, guide }: PaymentOptionProps) {
   return (
     <div className={`rounded-xl border-2 transition-all ${selected ? 'border-blue-400 bg-blue-500/10' : 'border-white/20 bg-white/5'}`}>
       <div className="flex items-center gap-4 p-4">

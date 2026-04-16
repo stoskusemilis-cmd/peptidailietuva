@@ -86,7 +86,7 @@ export function Cart({ onClose, onCheckout }: CartProps) {
                 <div className="flex flex-col sm:flex-row gap-4 p-4">
                   <div className="flex-shrink-0 w-full sm:w-32">
                     <img
-                      src={item.product.image_url}
+                      src={item.product.image_url || undefined}
                       alt={item.product.name}
                       className="w-full h-32 sm:h-32 object-contain rounded-lg bg-white/5"
                     />
