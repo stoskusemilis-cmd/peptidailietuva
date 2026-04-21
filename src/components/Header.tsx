@@ -1,4 +1,4 @@
-import { ShoppingCart, Mail, Send, Facebook, Instagram } from 'lucide-react';
+import { ShoppingCart, Send, Facebook, Instagram } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useCart } from '../contexts/CartContext';
 import { logoImage } from '../assets/images';
@@ -95,14 +95,6 @@ export function Header({ onCartClick, onLogoClick }: HeaderProps) {
             </div>
 
             <div className="hidden md:flex items-center gap-2">
-              <a
-                href="mailto:peptidailietuva@gmail.com"
-                className="p-2 bg-white/5 hover:bg-cyan-500/20 rounded-xl transition-all duration-300 border border-white/10 hover:border-cyan-500/50 group"
-                aria-label="Email"
-              >
-                <Mail className="w-5 h-5 text-cyan-400/80 group-hover:text-cyan-300 transition-colors" />
-              </a>
-
               <a
                 href="https://t.me/Peptidai"
                 target="_blank"
