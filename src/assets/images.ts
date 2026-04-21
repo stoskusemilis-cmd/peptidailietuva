@@ -3,7 +3,6 @@ import retatrutide15 from './retatrutide15.png';
 import glow70 from './glow70.png';
 import hgh15 from './hgh15.png';
 import semax10 from './semax10.png';
-import nad1000mg from './nad+1000mg.png';
 const logo = 'https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/Peptidailietuvalogonav.png';
 
 export const images: Record<string, string> = {
@@ -13,12 +12,9 @@ export const images: Record<string, string> = {
   'glow70': glow70,
   'hgh15': hgh15,
   'semax10': semax10,
-  'nad+1000mg': nad1000mg,
 };
 
-export const productImagesBySlug: Record<string, string> = {
-  'nad-plus-1000mg': nad1000mg,
-};
+export const productImagesBySlug: Record<string, string> = {};
 
 export function resolveProductImage(slug: string | null | undefined, imageUrl: string | null | undefined): string | null {
   if (slug && productImagesBySlug[slug]) return productImagesBySlug[slug];
