@@ -288,7 +288,7 @@ const translations: Record<Language, Record<string, string>> = {
     // ProductCard
     details: 'Detaliau',
     addToCart: 'Į krepšelį',
-    restockSoon: 'Netrukus atnaujinsime',
+    restockSoon: 'Netrukus turėsime',
     outOfStock: 'Nėra sandėlyje',
     // ProductDetail
     description: 'Aprašymas',
