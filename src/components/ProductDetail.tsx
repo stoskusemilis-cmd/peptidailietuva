@@ -1,4 +1,4 @@
-import { X, ShoppingCart, Minus, Plus } from 'lucide-react';
+import { X, ShoppingCart, Minus, Plus, PackageX } from 'lucide-react';
 import { Product } from '../lib/supabase';
 import { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -14,6 +14,7 @@ export function ProductDetail({ product, onClose, onAddToCart }: ProductDetailPr
   const [selectedTier, setSelectedTier] = useState(hasTiers ? product.price_tiers![0] : null);
   const [quantity, setQuantity] = useState(1);
   const { t, lang } = useLanguage();
+  const isOutOfStock = (product.stock ?? 0) <= 0;
 
   const getFullDescription = () => {
     if (lang === 'en' && product.full_description_en) return product.full_description_en;
@@ -163,13 +164,23 @@ export function ProductDetail({ product, onClose, onAddToCart }: ProductDetailPr
             </div>
           )}
 
-          <button
-            onClick={handleAddToCart}
-            className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 active:from-cyan-600 active:to-blue-600 text-white font-bold py-3.5 sm:py-4 px-6 rounded-xl transition-all duration-300 flex items-center justify-center space-x-2 shadow-lg shadow-cyan-500/30 mb-3"
-          >
-            <ShoppingCart className="w-5 h-5" />
-            <span>{t('addToCartBtn')}</span>
-          </button>
+          {isOutOfStock ? (
+            <button
+              disabled
+              className="w-full bg-amber-500/15 text-amber-200 border-2 border-amber-400/40 font-bold py-3.5 sm:py-4 px-6 rounded-xl flex items-center justify-center space-x-2 mb-3 cursor-not-allowed"
+            >
+              <PackageX className="w-5 h-5" />
+              <span>{t('restockSoon')}</span>
+            </button>
+          ) : (
+            <button
+              onClick={handleAddToCart}
+              className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 active:from-cyan-600 active:to-blue-600 text-white font-bold py-3.5 sm:py-4 px-6 rounded-xl transition-all duration-300 flex items-center justify-center space-x-2 shadow-lg shadow-cyan-500/30 mb-3"
+            >
+              <ShoppingCart className="w-5 h-5" />
+              <span>{t('addToCartBtn')}</span>
+            </button>
+          )}
 
           <div className="text-center text-base font-semibold">
             <span className="text-white/80">{t('total')} </span>
