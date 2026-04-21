@@ -1,6 +1,7 @@
 import { ShoppingCart, PackageX } from 'lucide-react';
 import { Product } from '../lib/supabase';
 import { useLanguage } from '../contexts/LanguageContext';
+import { resolveProductImage } from '../assets/images';
 
 interface ProductCardProps {
   product: Product;
@@ -10,7 +11,7 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, onViewDetails, onQuickAdd }: ProductCardProps) {
-  const imageSrc = product.image_url || null;
+  const imageSrc = resolveProductImage(product.slug, product.image_url);
   const { t, lang } = useLanguage();
   const isOutOfStock = (product.stock ?? 0) <= 0;
 

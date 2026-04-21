@@ -2,6 +2,7 @@ import { X, ShoppingCart, Minus, Plus, PackageX } from 'lucide-react';
 import { Product } from '../lib/supabase';
 import { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { resolveProductImage } from '../assets/images';
 
 interface ProductDetailProps {
   product: Product;
@@ -22,7 +23,7 @@ export function ProductDetail({ product, onClose, onAddToCart }: ProductDetailPr
     return product.full_description;
   };
 
-  const imageSrc = product.image_url || null;
+  const imageSrc = resolveProductImage(product.slug, product.image_url);
 
   const handleAddToCart = () => {
     const tierQuantity = selectedTier?.quantity || quantity;

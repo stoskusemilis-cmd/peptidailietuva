@@ -2,6 +2,7 @@ import { X, Trash2, Shield, Truck, Lock } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useState, useEffect } from 'react';
+import { resolveProductImage } from '../assets/images';
 
 interface CartProps {
   onClose: () => void;
@@ -86,7 +87,7 @@ export function Cart({ onClose, onCheckout }: CartProps) {
                 <div className="flex flex-col sm:flex-row gap-4 p-4">
                   <div className="flex-shrink-0 w-full sm:w-32">
                     <img
-                      src={item.product.image_url || undefined}
+                      src={resolveProductImage(item.product.slug, item.product.image_url) || undefined}
                       alt={item.product.name}
                       className="w-full h-32 sm:h-32 object-contain rounded-lg bg-white/5"
                     />
