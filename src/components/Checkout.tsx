@@ -831,10 +831,10 @@ export function Checkout({ onClose }: CheckoutProps) {
                       type="button"
                       onClick={handleApplyDiscount}
                       disabled={discountLoading || !discountCodeInput.trim()}
-                      className="flex items-center gap-2 px-4 py-3 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-white font-semibold rounded-lg transition-colors shrink-0"
+                      className="flex items-center gap-2 px-4 py-3 bg-green-600 hover:bg-green-500 disabled:opacity-50 text-white font-semibold rounded-lg transition-colors shrink-0"
                     >
                       {discountLoading ? <Loader className="w-4 h-4 animate-spin" /> : <Tag className="w-4 h-4" />}
-                      <span className="hidden sm:inline">{t('checkoutApply')}</span>
+                      <span>{t('checkoutApply')}</span>
                     </button>
                   </div>
                 )}
