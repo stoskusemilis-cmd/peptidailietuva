@@ -12,8 +12,9 @@ interface CartProps {
 export function Cart({ onClose, onCheckout }: CartProps) {
   const { cart, removeFromCart, getTotalPrice } = useCart();
   const { t, lang } = useLanguage();
-  const [solPrice, setSolPrice] = useState<number>(150);
+  const [solPrice, setSolPrice] = useState<number | null>(null);
   const [priceLoading, setPriceLoading] = useState(false);
+  const [priceError, setPriceError] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   const SHIPPING_FEE_EUR = 3.5;
@@ -21,20 +22,31 @@ export function Cart({ onClose, onCheckout }: CartProps) {
   const totalEur = getTotalPrice();
   const shippingFee = totalEur >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE_EUR;
   const totalWithShipping = totalEur + shippingFee;
-  const solAmount = (totalWithShipping / solPrice).toFixed(4);
+  const solAmount = solPrice ? (totalWithShipping / solPrice).toFixed(4) : null;
 
   useEffect(() => {
+    let active = true;
     setPriceLoading(true);
-    fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=eur')
-      .then(res => res.json())
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    fetch(`${supabaseUrl}/functions/v1/get-sol-price`, {
+      headers: { 'Authorization': `Bearer ${supabaseKey}` },
+    })
+      .then(res => res.ok ? res.json() : Promise.reject(new Error('price_unavailable')))
       .then(data => {
-        if (data.solana?.eur) {
-          setSolPrice(data.solana.eur);
+        if (!active) return;
+        const price = typeof data?.price_eur === 'number' ? data.price_eur : null;
+        if (price && price > 0) {
+          setSolPrice(price);
           setLastUpdated(new Date());
+          setPriceError(false);
+        } else {
+          setPriceError(true);
         }
       })
-      .catch(() => {})
-      .finally(() => setPriceLoading(false));
+      .catch(() => { if (active) setPriceError(true); })
+      .finally(() => { if (active) setPriceLoading(false); });
+    return () => { active = false; };
   }, []);
 
   if (cart.length === 0) {
@@ -174,14 +186,14 @@ export function Cart({ onClose, onCheckout }: CartProps) {
                 <div className="flex items-center justify-between mb-2">
                   <div>
                     <p className="text-white/50 text-xs mb-0.5">{t('cartPaySol')}</p>
-                    <p className={`text-white font-bold text-xl font-mono transition-opacity duration-300 ${priceLoading ? 'opacity-40' : 'opacity-100'}`}>
-                      {priceLoading ? '...' : `${solAmount} SOL`}
+                    <p className={`text-white font-bold text-xl font-mono transition-opacity duration-300 ${priceLoading || !solPrice ? 'opacity-40' : 'opacity-100'}`}>
+                      {priceLoading || !solAmount ? '...' : `${solAmount} SOL`}
                     </p>
                   </div>
                   <div className="text-right">
                     <p className="text-white/50 text-xs mb-0.5">{t('cartRate')}</p>
-                    <p className={`text-white/70 text-sm font-mono transition-opacity duration-300 ${priceLoading ? 'opacity-40' : 'opacity-100'}`}>
-                      1 SOL ≈ {solPrice.toFixed(0)}€
+                    <p className={`text-white/70 text-sm font-mono transition-opacity duration-300 ${priceLoading || !solPrice ? 'opacity-40' : 'opacity-100'}`}>
+                      {solPrice ? `1 SOL ≈ ${solPrice.toFixed(0)}€` : '...'}
                     </p>
                   </div>
                 </div>
@@ -194,9 +206,15 @@ export function Cart({ onClose, onCheckout }: CartProps) {
             </div>
           </div>
 
+          {priceError && !priceLoading && (
+            <div className="mb-3 bg-amber-500/10 border border-amber-400/40 rounded-xl px-3 py-2 text-amber-200 text-xs text-center">
+              {t('cartPriceUnavailable') || 'SOL kursas šiuo metu nepasiekiamas. Pabandykite vėliau.'}
+            </div>
+          )}
           <button
             onClick={onCheckout}
-            className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-bold py-3.5 sm:py-4 px-6 rounded-xl transition-all duration-300 text-base sm:text-lg shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 hover:scale-[1.02] active:scale-[0.98]"
+            disabled={!solPrice || priceLoading}
+            className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-white font-bold py-3.5 sm:py-4 px-6 rounded-xl transition-all duration-300 text-base sm:text-lg shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 hover:scale-[1.02] active:scale-[0.98]"
           >
             {t('cartCheckout')}
           </button>

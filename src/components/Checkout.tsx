@@ -20,7 +20,8 @@ export function Checkout({ onClose }: CheckoutProps) {
   const [loading, setLoading] = useState(false);
   const [orderError, setOrderError] = useState('');
   const [orderNumber, setOrderNumber] = useState('');
-  const [solPrice, setSolPrice] = useState<number>(150);
+  const [solPrice, setSolPrice] = useState<number | null>(null);
+  const [solPriceError, setSolPriceError] = useState<boolean>(false);
   const [copySuccess, setCopySuccess] = useState<'address' | 'sol' | null>(null);
   const [selectedPayment, setSelectedPayment] = useState<PaymentMethod>(null);
   const [expandedGuide, setExpandedGuide] = useState<PaymentMethod>(null);
@@ -66,17 +67,35 @@ export function Checkout({ onClose }: CheckoutProps) {
   const shippingFee = discountedTotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE_EUR;
   const totalEurWithFee = discountedTotal + shippingFee;
   const activeSolPrice = lockedSolPrice ?? solPrice;
-  const baseSolAmount = parseFloat((totalEurWithFee / activeSolPrice).toFixed(4));
-  const solAmount = (baseSolAmount + uniqueSolOffset).toFixed(5);
+  const baseSolAmount = activeSolPrice ? parseFloat((totalEurWithFee / activeSolPrice).toFixed(4)) : 0;
+  const solAmount = activeSolPrice ? (baseSolAmount + uniqueSolOffset).toFixed(5) : '0';
 
   useEffect(() => {
     let active = true;
     const fetchAndSet = async () => {
       try {
-        const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=eur');
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+        const res = await fetch(`${supabaseUrl}/functions/v1/get-sol-price`, {
+          headers: { 'Authorization': `Bearer ${supabaseKey}` },
+        });
+        if (!res.ok) {
+          if (active) setSolPriceError(true);
+          return;
+        }
         const data = await res.json();
-        if (active && data.solana?.eur) setSolPrice(data.solana.eur);
-      } catch {}
+        const price = typeof data?.price_eur === 'number' ? data.price_eur : null;
+        if (active) {
+          if (price && price > 0) {
+            setSolPrice(price);
+            setSolPriceError(false);
+          } else {
+            setSolPriceError(true);
+          }
+        }
+      } catch {
+        if (active) setSolPriceError(true);
+      }
     };
     fetchCitiesAndLockers();
     fetchAndSet();
@@ -241,6 +260,10 @@ export function Checkout({ onClose }: CheckoutProps) {
       return;
     }
     setOrderError('');
+    if (!solPrice || solPrice <= 0) {
+      setOrderError(t('solPriceUnavailable') || 'SOL kursas šiuo metu nepasiekiamas. Pabandykite po kelių sekundžių.');
+      return;
+    }
     const currentSolPrice = solPrice;
     setLockedSolPrice(currentSolPrice);
     const base = parseFloat((totalEurWithFee / currentSolPrice).toFixed(4));
@@ -892,9 +915,16 @@ export function Checkout({ onClose }: CheckoutProps) {
                 </div>
               </div>
 
+              {(!solPrice || solPriceError) && (
+                <div className="bg-amber-500/10 border border-amber-400/40 rounded-xl p-3 text-amber-200 text-sm">
+                  {t('solPriceUnavailable') || 'SOL kursas kraunamas... Mygtukas bus aktyvus, kai gausime tikslią rinkos kainą.'}
+                </div>
+              )}
+
               <button
                 type="submit"
-                className="w-full bg-white text-[#0a1929] hover:bg-white/90 font-bold py-4 px-6 rounded-lg transition-colors"
+                disabled={!solPrice || solPrice <= 0}
+                className="w-full bg-white text-[#0a1929] hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed font-bold py-4 px-6 rounded-lg transition-colors"
               >
                 {t('checkoutContinue')}
               </button>
