@@ -57,6 +57,32 @@ async function getRecentTransactions(limit = 200): Promise<Array<{ signature: st
   }
 }
 
+type SbClient = ReturnType<typeof createClient>;
+
+async function decrementStockForOrder(
+  supabase: SbClient,
+  orderId: string,
+  orderItems: unknown
+): Promise<void> {
+  if (!Array.isArray(orderItems)) return;
+  for (const raw of orderItems) {
+    if (!raw || typeof raw !== "object") continue;
+    const item = raw as { product_id?: string; quantity?: number };
+    const pid = typeof item.product_id === "string" ? item.product_id : null;
+    const qty = Math.floor(Number(item.quantity));
+    if (!pid || !Number.isFinite(qty) || qty <= 0) continue;
+    try {
+      await supabase.rpc("decrement_product_stock", {
+        p_product_id: pid,
+        p_quantity: qty,
+        p_order_id: orderId,
+      });
+    } catch (e) {
+      console.error("decrement_product_stock failed", { orderId, pid, qty, e });
+    }
+  }
+}
+
 async function getTransactionAmount(signature: string): Promise<{ receivedSol: number } | null> {
   try {
     const res = await rpcFetch({
@@ -177,7 +203,7 @@ Deno.serve(async (req: Request) => {
           })
           .eq("id", order_id)
           .eq("payment_status", "pending")
-          .select("id")
+          .select("id, order_items")
           .maybeSingle();
 
         if (!updated) {
@@ -191,6 +217,8 @@ Deno.serve(async (req: Request) => {
             { headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
+
+        await decrementStockForOrder(supabase, order_id, updated.order_items);
 
         EdgeRuntime.waitUntil((async () => {
           try {

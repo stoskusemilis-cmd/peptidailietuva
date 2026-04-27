@@ -281,116 +281,68 @@ export function Checkout({ onClose }: CheckoutProps) {
     setOrderError('');
     try {
       const selectedLocker = filteredLockers.find(l => l.id === formData.parcelLocker);
-      const orderItems = cart.map(item => {
-        const tier = item.product.price_tiers?.find(t => t.quantity === item.quantity);
-        const lineTotal = tier ? tier.price : item.product.price * item.quantity;
-        return {
-          product_id: item.product.id,
-          product_name: item.product.name,
-          quantity: item.quantity,
-          price: tier ? parseFloat((tier.price / item.quantity).toFixed(4)) : item.product.price,
-          line_total: parseFloat(lineTotal.toFixed(2)),
-        };
-      });
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-      const fullOrderDetails = {
-        items: orderItems,
-        phone: formData.phone,
-        city: formData.city,
-        parcel_locker: selectedLocker
-          ? { id: selectedLocker.id, provider: selectedLocker.provider, address: selectedLocker.address, locker_code: selectedLocker.locker_code }
-          : null,
-        pricing: {
-          subtotal_eur: totalEur,
-          discount_code: appliedDiscount?.code || null,
-          discount_percent: appliedDiscount?.percent || null,
-          discount_amount_eur: discountAmount,
-          discounted_subtotal_eur: discountedTotal,
-          shipping_fee_eur: shippingFee,
-          total_eur: totalEurWithFee,
-          sol_price_eur: lockedSolPrice ?? solPrice,
-          base_sol: baseSolAmount,
-          unique_sol_offset: uniqueSolOffset,
-          total_sol: solAmount,
-          commission_percent: appliedDiscount?.commission || null,
+      const createRes = await fetch(`${supabaseUrl}/functions/v1/create-order`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseKey}`,
         },
-        payment_method: selectedPayment,
-        wallet_address: SOLANA_ADDRESS,
-        crypto_type: 'SOL',
-      };
-
-      const { data: order, error } = await supabase
-        .from('orders')
-        .insert({
+        body: JSON.stringify({
+          cart: cart.map(item => ({ product_id: item.product.id, quantity: item.quantity })),
           customer_phone: formData.phone,
           customer_city: formData.city,
-          delivery_method: 'parcel_locker',
           parcel_locker_id: formData.parcelLocker || null,
-          order_items: orderItems,
-          total_amount: totalEurWithFee,
-          subtotal_amount: totalEur,
-          discount_code: appliedDiscount?.code || null,
-          discount_percent: appliedDiscount?.percent || null,
-          discount_amount: discountAmount,
-          crypto_amount: parseFloat(solAmount),
-          unique_sol_offset: uniqueSolOffset,
-          payment_status: 'pending',
-          order_status: 'pending',
-          full_order_details: fullOrderDetails,
-          shipping_address: {
-            crypto_type: 'SOL',
-            wallet_address: SOLANA_ADDRESS,
-            payment_method: selectedPayment,
-            shipping_fee_eur: shippingFee,
-            original_total_eur: totalEur,
-          },
-        })
-        .select()
-        .maybeSingle();
+          payment_method: selectedPayment,
+          discount_code: appliedDiscount?.code ?? null,
+        }),
+      });
 
-      if (error) throw error;
-      if (!order) throw new Error('Failed to create order');
-
-      if (appliedDiscount) {
-        try { await supabase.rpc('increment_discount_usage', { p_code: appliedDiscount.code }); } catch {}
+      const createData = await createRes.json().catch(() => ({}));
+      if (!createRes.ok || !createData?.ok) {
+        const code = createData?.error || 'order_failed';
+        const messages: Record<string, string> = {
+          empty_cart: t('checkoutCodeError') || 'Krepšelis tuščias.',
+          too_many_items: 'Per daug prekių krepšelyje.',
+          invalid_phone: t('invalidPhone') || 'Neteisingas telefono numeris.',
+          invalid_city: t('checkoutCodeError') || 'Neteisingas miestas.',
+          invalid_payment_method: 'Pasirinktas mokėjimo būdas negalimas.',
+          invalid_cart_item: 'Krepšelyje yra netinkamų prekių.',
+          product_unavailable: 'Vienos iš prekių laikinai nėra.',
+          insufficient_stock: 'Likučio nepakanka. Sumažinkite kiekį.',
+          invalid_discount_code: t('checkoutDiscountError') || 'Neteisingas nuolaidos kodas.',
+          invalid_parcel_locker: 'Pasirinktas paštomatas neaktyvus.',
+          sol_price_unavailable: t('solPriceUnavailable') || 'SOL kursas šiuo metu nepasiekiamas.',
+          order_insert_failed: t('checkoutCodeError') || 'Užsakymo įrašyti nepavyko.',
+        };
+        setOrderError(messages[code] || (t('checkoutCodeError') || 'Užsakymo sukurti nepavyko.'));
+        return;
       }
 
-      try {
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-        const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-        const emailRes = await fetch(`${supabaseUrl}/functions/v1/send-order-email`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${supabaseKey}`,
-          },
-          body: JSON.stringify({ order_id: order.id }),
-        });
-        if (!emailRes.ok) {
-          console.error('send-order-email failed:', emailRes.status, await emailRes.text());
-        }
-      } catch (err) {
-        console.error('send-order-email error:', err);
-      }
+      const computedSolAmount = String(createData.sol_amount);
+      const orderTotalEur = Number(createData.total_eur);
+      const orderShippingFee = Math.max(0, orderTotalEur - (totalEur - discountAmount));
 
       setSnapshotCart([...cart]);
       setSnapshotTotalEur(totalEur);
-      setSnapshotShippingFee(shippingFee);
-      setSnapshotSolAmount(solAmount);
+      setSnapshotShippingFee(orderShippingFee);
+      setSnapshotSolAmount(computedSolAmount);
       setSnapshotSelectedLocker(selectedLocker);
       setSnapshotDiscount(appliedDiscount ? { ...appliedDiscount, amount: discountAmount, commission: appliedDiscount.commission } : null);
       setSnapshotPaymentMethod(selectedPayment);
-      setOrderNumber(order.order_number);
-      setOrderId(order.id);
+      setOrderNumber(createData.order_number);
+      setOrderId(createData.order_id);
       clearCart();
 
       if (selectedPayment === 'swaps') {
-        const swapsUrl = `https://www.swaps.app/?side=buy&amount=${solAmount}&to=SOL%3Asolana&country=LT&toAddress=${SOLANA_ADDRESS}`;
+        const swapsUrl = `https://www.swaps.app/?side=buy&amount=${computedSolAmount}&to=SOL%3Asolana&country=LT&toAddress=${SOLANA_ADDRESS}`;
         window.open(swapsUrl, '_blank');
       }
 
       if (selectedPayment === 'paybis') {
-        const paybisUrl = `https://paybis.com/buy-solana/?fromCurrencyCode=EUR&toCurrencyCode=SOL&toAmount=${solAmount}&toAddress=${SOLANA_ADDRESS}`;
+        const paybisUrl = `https://paybis.com/buy-solana/?fromCurrencyCode=EUR&toCurrencyCode=SOL&toAmount=${computedSolAmount}&toAddress=${SOLANA_ADDRESS}`;
         window.open(paybisUrl, '_blank');
       }
 
@@ -1229,7 +1181,7 @@ function PaymentOption({ selected, onSelect, expanded, onToggleGuide, label, bad
   );
 }
 
-function SwapsGuide({ solAmount }: { solAmount: string; totalEurWithFee: number }) {
+function SwapsGuide({ solAmount, totalEurWithFee }: { solAmount: string; totalEurWithFee: number }) {
   const { t } = useLanguage();
   const swapsUrl = `https://www.swaps.app/?side=buy&amount=${solAmount}&to=SOL%3Asolana&country=LT&toAddress=${SOLANA_ADDRESS}`;
   return (
