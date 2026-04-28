@@ -59,16 +59,36 @@ export function Checkout({ onClose }: CheckoutProps) {
   const [lockedSolPrice, setLockedSolPrice] = useState<number | null>(null);
   const [uniqueSolOffset, setUniqueSolOffset] = useState<number>(0);
 
+  type LockedSnapshot = {
+    cart: typeof cart;
+    appliedDiscount: typeof appliedDiscount;
+    subtotalEur: number;
+    discountAmount: number;
+    shippingFee: number;
+    totalEurWithFee: number;
+    solAmount: string;
+    solPrice: number;
+    offset: number;
+  };
+  const [locked, setLocked] = useState<LockedSnapshot | null>(null);
+
   const SHIPPING_FEE_EUR = 3.5;
   const FREE_SHIPPING_THRESHOLD = 50;
-  const totalEur = getTotalPrice();
-  const discountAmount = appliedDiscount ? parseFloat((totalEur * appliedDiscount.percent / 100).toFixed(2)) : 0;
-  const discountedTotal = totalEur - discountAmount;
-  const shippingFee = discountedTotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE_EUR;
-  const totalEurWithFee = discountedTotal + shippingFee;
-  const activeSolPrice = lockedSolPrice ?? solPrice;
-  const baseSolAmount = activeSolPrice ? parseFloat((totalEurWithFee / activeSolPrice).toFixed(4)) : 0;
-  const solAmount = activeSolPrice ? (baseSolAmount + uniqueSolOffset).toFixed(5) : '0';
+  const liveTotalEur = getTotalPrice();
+  const liveDiscountAmount = appliedDiscount ? parseFloat((liveTotalEur * appliedDiscount.percent / 100).toFixed(2)) : 0;
+  const liveDiscountedTotal = liveTotalEur - liveDiscountAmount;
+  const liveShippingFee = liveDiscountedTotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE_EUR;
+  const liveTotalEurWithFee = liveDiscountedTotal + liveShippingFee;
+  const liveBaseSolAmount = solPrice ? parseFloat((liveTotalEurWithFee / solPrice).toFixed(4)) : 0;
+  const liveSolAmount = solPrice ? (liveBaseSolAmount + uniqueSolOffset).toFixed(5) : '0';
+
+  const totalEur = locked ? locked.subtotalEur : liveTotalEur;
+  const discountAmount = locked ? locked.discountAmount : liveDiscountAmount;
+  const shippingFee = locked ? locked.shippingFee : liveShippingFee;
+  const totalEurWithFee = locked ? locked.totalEurWithFee : liveTotalEurWithFee;
+  const solAmount = locked ? locked.solAmount : liveSolAmount;
+  const displayCart = locked ? locked.cart : cart;
+  const displayAppliedDiscount = locked ? locked.appliedDiscount : appliedDiscount;
 
   useEffect(() => {
     let active = true;
@@ -282,16 +302,34 @@ export function Checkout({ onClose }: CheckoutProps) {
       return;
     }
     const currentSolPrice = solPrice;
-    setLockedSolPrice(currentSolPrice);
-    const base = parseFloat((totalEurWithFee / currentSolPrice).toFixed(4));
+    const subtotalNow = liveTotalEur;
+    const discountNow = liveDiscountAmount;
+    const discountedNow = subtotalNow - discountNow;
+    const shippingNow = discountedNow >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE_EUR;
+    const totalNow = parseFloat((discountedNow + shippingNow).toFixed(2));
+    const base = parseFloat((totalNow / currentSolPrice).toFixed(4));
     const offset = await generateUniqueOffset(base);
+    const finalSolAmount = (base + offset).toFixed(5);
+
+    setLockedSolPrice(currentSolPrice);
     setUniqueSolOffset(offset);
+    setLocked({
+      cart: [...cart],
+      appliedDiscount: appliedDiscount ? { ...appliedDiscount } : null,
+      subtotalEur: subtotalNow,
+      discountAmount: discountNow,
+      shippingFee: shippingNow,
+      totalEurWithFee: totalNow,
+      solAmount: finalSolAmount,
+      solPrice: currentSolPrice,
+      offset,
+    });
     setStep('payment');
   };
 
   const handleConfirmPayment = async () => {
     if (!selectedPayment) return;
-    if (cart.length === 0) return;
+    if (!locked || locked.cart.length === 0) return;
     if (submittingRef.current) return;
     submittingRef.current = true;
     setLoading(true);
@@ -308,13 +346,15 @@ export function Checkout({ onClose }: CheckoutProps) {
           'Authorization': `Bearer ${supabaseKey}`,
         },
         body: JSON.stringify({
-          cart: cart.map(item => ({ product_id: item.product.id, quantity: item.quantity })),
+          cart: locked.cart.map(item => ({ product_id: item.product.id, quantity: item.quantity })),
           customer_phone: formData.phone,
           customer_city: formData.city,
           parcel_locker_id: formData.parcelLocker || null,
           payment_method: selectedPayment,
-          discount_code: appliedDiscount?.code ?? null,
-          expected_sol_price_eur: lockedSolPrice ?? solPrice ?? null,
+          discount_code: locked.appliedDiscount?.code ?? null,
+          expected_sol_price_eur: locked.solPrice,
+          expected_sol_amount: locked.solAmount,
+          expected_total_eur: locked.totalEurWithFee,
         }),
       });
 
@@ -336,6 +376,8 @@ export function Checkout({ onClose }: CheckoutProps) {
           locker_city_mismatch: t('lockerRequired') || 'Pasirinkite paštomatą.',
           sol_price_unavailable: t('solPriceUnavailable') || 'SOL kursas šiuo metu nepasiekiamas.',
           sol_price_drift: 'SOL kursas pasikeitė. Atnaujinkite puslapį ir pabandykite dar kartą.',
+          sol_amount_drift: 'SOL suma pasikeitė. Atnaujinkite puslapį ir pabandykite dar kartą.',
+          total_eur_drift: 'Suma pasikeitė. Grįžkite atgal ir patikrinkite krepšelį.',
           order_insert_failed: t('checkoutCodeError') || 'Užsakymo įrašyti nepavyko.',
         };
         setOrderError(messages[code] || (t('checkoutCodeError') || 'Užsakymo sukurti nepavyko.'));
@@ -343,15 +385,13 @@ export function Checkout({ onClose }: CheckoutProps) {
       }
 
       const computedSolAmount = String(createData.sol_amount);
-      const orderTotalEur = Number(createData.total_eur);
-      const orderShippingFee = Math.max(0, orderTotalEur - (totalEur - discountAmount));
 
-      setSnapshotCart([...cart]);
-      setSnapshotTotalEur(totalEur);
-      setSnapshotShippingFee(orderShippingFee);
+      setSnapshotCart([...locked.cart]);
+      setSnapshotTotalEur(locked.subtotalEur);
+      setSnapshotShippingFee(locked.shippingFee);
       setSnapshotSolAmount(computedSolAmount);
       setSnapshotSelectedLocker(selectedLocker);
-      setSnapshotDiscount(appliedDiscount ? { ...appliedDiscount, amount: discountAmount, commission: appliedDiscount.commission } : null);
+      setSnapshotDiscount(locked.appliedDiscount ? { ...locked.appliedDiscount, amount: locked.discountAmount, commission: locked.appliedDiscount.commission } : null);
       setSnapshotPaymentMethod(selectedPayment);
       setOrderNumber(createData.order_number);
       setOrderId(createData.order_id);
@@ -907,7 +947,7 @@ export function Checkout({ onClose }: CheckoutProps) {
               <div className="bg-white/10 border border-white/20 rounded-xl p-5">
                 <h3 className="font-bold text-white mb-3 text-lg">{t('orderAmount')}</h3>
                 <div className="space-y-2 text-base">
-                  {cart.map(item => {
+                  {displayCart.map(item => {
                     const tier = item.product.price_tiers?.find(t => t.quantity === item.quantity);
                     const lineTotal = tier ? tier.price : item.product.price * item.quantity;
                     return (
@@ -918,10 +958,10 @@ export function Checkout({ onClose }: CheckoutProps) {
                     );
                   })}
                   <div className="border-t border-white/20 pt-2 mt-2 space-y-1">
-                    {appliedDiscount && (
+                    {displayAppliedDiscount && (
                       <div className="flex justify-between text-green-400">
                         <span>
-                          {t('checkoutDiscountLine').replace('{code}', appliedDiscount.code).replace('{percent}', String(appliedDiscount.percent))}
+                          {t('checkoutDiscountLine').replace('{code}', displayAppliedDiscount.code).replace('{percent}', String(displayAppliedDiscount.percent))}
                         </span>
                         <span>-{discountAmount.toFixed(2)}€</span>
                       </div>
@@ -1136,7 +1176,7 @@ export function Checkout({ onClose }: CheckoutProps) {
               </button>
 
               <button
-                onClick={() => { setLockedSolPrice(null); setStep('info'); }}
+                onClick={() => { setLockedSolPrice(null); setLocked(null); setUniqueSolOffset(0); setStep('info'); }}
                 className="w-full bg-white/10 text-white hover:bg-white/20 font-medium py-3 px-6 rounded-lg transition-colors"
               >
                 {t('checkoutBack')}

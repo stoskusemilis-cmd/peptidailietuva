@@ -33,6 +33,8 @@ type CreateOrderInput = {
   payment_method: string;
   discount_code?: string | null;
   expected_sol_price_eur?: number | null;
+  expected_sol_amount?: string | number | null;
+  expected_total_eur?: number | null;
 };
 
 type ProductRow = {
@@ -378,9 +380,37 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    const expectedTotal = Number(body.expected_total_eur);
+    if (Number.isFinite(expectedTotal) && expectedTotal > 0) {
+      if (Math.abs(expectedTotal - totalEur) > 0.01) {
+        return new Response(
+          JSON.stringify({ error: "total_eur_drift", server_total: totalEur, client_total: expectedTotal }),
+          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     const baseSol = round4(totalEur / solPrice);
-    const offset = await pickUniqueOffset(supabase, baseSol);
-    const cryptoAmount = round5(baseSol + offset);
+    let offset = await pickUniqueOffset(supabase, baseSol);
+    let cryptoAmount = round5(baseSol + offset);
+
+    const expectedSolRaw = body.expected_sol_amount;
+    const expectedSol = expectedSolRaw == null ? NaN : Number(expectedSolRaw);
+    if (Number.isFinite(expectedSol) && expectedSol > 0) {
+      if (Math.abs(expectedSol - cryptoAmount) <= 0.001) {
+        cryptoAmount = round5(expectedSol);
+        offset = round5(cryptoAmount - baseSol);
+      } else {
+        return new Response(
+          JSON.stringify({
+            error: "sol_amount_drift",
+            server_amount: cryptoAmount,
+            client_amount: expectedSol,
+          }),
+          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
 
     const fullOrderDetails = {
       items: orderItems,
