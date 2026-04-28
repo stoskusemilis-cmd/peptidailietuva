@@ -161,7 +161,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const orderCreatedAt = new Date(order.created_at).getTime() / 1000;
-    const lookbackSeconds = 72 * 60 * 60;
+    const lookbackSeconds = 7 * 24 * 60 * 60;
 
     const allSignatures = await getRecentTransactions(200);
 
@@ -170,7 +170,7 @@ Deno.serve(async (req: Request) => {
         && s.blockTime <= (orderCreatedAt + lookbackSeconds)
     );
 
-    const windowStart = new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString();
+    const windowStart = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     const { data: paidOrders } = await supabase
       .from("orders")
       .select("transaction_signature")
@@ -191,7 +191,10 @@ Deno.serve(async (req: Request) => {
       if (!txInfo) continue;
       if (txInfo.receivedSol <= 0) continue;
 
-      if (Math.abs(txInfo.receivedSol - expectedSolNum) <= TOLERANCE) {
+      const underpaid = expectedSolNum - txInfo.receivedSol;
+      const overpaid = txInfo.receivedSol - expectedSolNum;
+      const acceptable = underpaid <= TOLERANCE && overpaid <= 0.01;
+      if (acceptable) {
         const { data: updated } = await supabase
           .from("orders")
           .update({

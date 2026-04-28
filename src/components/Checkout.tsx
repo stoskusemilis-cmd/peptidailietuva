@@ -34,7 +34,7 @@ export function Checkout({ onClose }: CheckoutProps) {
   const [orderId, setOrderId] = useState('');
   const [paymentConfirmed, setPaymentConfirmed] = useState(false);
   const [paymentChecking, setPaymentChecking] = useState(false);
-  const [nextCheckIn, setNextCheckIn] = useState(60);
+  const [nextCheckIn, setNextCheckIn] = useState(5);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const submittingRef = useRef(false);
@@ -146,15 +146,15 @@ export function Checkout({ onClose }: CheckoutProps) {
 
     countdownRef.current = setInterval(() => {
       setNextCheckIn(prev => {
-        if (prev <= 1) return 60;
+        if (prev <= 1) return 5;
         return prev - 1;
       });
     }, 1000);
 
     pollIntervalRef.current = setInterval(() => {
-      setNextCheckIn(60);
+      setNextCheckIn(5);
       checkPayment();
-    }, 60000);
+    }, 5000);
 
     return () => {
       cancelled = true;
@@ -255,8 +255,25 @@ export function Checkout({ onClose }: CheckoutProps) {
 
   const handleInfoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.phone.trim()) {
+      setOrderError(t('phoneRequired') || 'Įveskite telefono numerį.');
+      return;
+    }
     if (!validatePhone(formData.phone)) {
       setOrderError(t('invalidPhone') || 'Neteisingas telefono numeris.');
+      return;
+    }
+    if (!formData.city.trim()) {
+      setOrderError(t('cityRequired') || 'Pasirinkite miestą.');
+      return;
+    }
+    if (!formData.parcelLocker.trim()) {
+      setOrderError(t('lockerRequired') || 'Pasirinkite paštomatą.');
+      return;
+    }
+    const lockerStillValid = filteredLockers.some(l => l.id === formData.parcelLocker);
+    if (!lockerStillValid) {
+      setOrderError(t('lockerRequired') || 'Pasirinkite paštomatą.');
       return;
     }
     setOrderError('');
@@ -297,6 +314,7 @@ export function Checkout({ onClose }: CheckoutProps) {
           parcel_locker_id: formData.parcelLocker || null,
           payment_method: selectedPayment,
           discount_code: appliedDiscount?.code ?? null,
+          expected_sol_price_eur: lockedSolPrice ?? solPrice ?? null,
         }),
       });
 
@@ -307,14 +325,17 @@ export function Checkout({ onClose }: CheckoutProps) {
           empty_cart: t('checkoutCodeError') || 'Krepšelis tuščias.',
           too_many_items: 'Per daug prekių krepšelyje.',
           invalid_phone: t('invalidPhone') || 'Neteisingas telefono numeris.',
-          invalid_city: t('checkoutCodeError') || 'Neteisingas miestas.',
+          invalid_city: t('cityRequired') || 'Pasirinkite miestą.',
           invalid_payment_method: 'Pasirinktas mokėjimo būdas negalimas.',
           invalid_cart_item: 'Krepšelyje yra netinkamų prekių.',
           product_unavailable: 'Vienos iš prekių laikinai nėra.',
           insufficient_stock: 'Likučio nepakanka. Sumažinkite kiekį.',
           invalid_discount_code: t('checkoutDiscountError') || 'Neteisingas nuolaidos kodas.',
-          invalid_parcel_locker: 'Pasirinktas paštomatas neaktyvus.',
+          parcel_locker_required: t('lockerRequired') || 'Pasirinkite paštomatą.',
+          invalid_parcel_locker: t('lockerRequired') || 'Pasirinkite paštomatą.',
+          locker_city_mismatch: t('lockerRequired') || 'Pasirinkite paštomatą.',
           sol_price_unavailable: t('solPriceUnavailable') || 'SOL kursas šiuo metu nepasiekiamas.',
+          sol_price_drift: 'SOL kursas pasikeitė. Atnaujinkite puslapį ir pabandykite dar kartą.',
           order_insert_failed: t('checkoutCodeError') || 'Užsakymo įrašyti nepavyko.',
         };
         setOrderError(messages[code] || (t('checkoutCodeError') || 'Užsakymo sukurti nepavyko.'));

@@ -32,6 +32,7 @@ type CreateOrderInput = {
   parcel_locker_id?: string | null;
   payment_method: string;
   discount_code?: string | null;
+  expected_sol_price_eur?: number | null;
 };
 
 type ProductRow = {
@@ -183,6 +184,12 @@ Deno.serve(async (req: Request) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    if (!parcelLockerId) {
+      return new Response(JSON.stringify({ error: "parcel_locker_required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     if (!ALLOWED_PAYMENT_METHODS.has(paymentMethod)) {
       return new Response(JSON.stringify({ error: "invalid_payment_method" }), {
         status: 400,
@@ -207,6 +214,24 @@ Deno.serve(async (req: Request) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
+
+    const { data: lockerRow, error: lockerErr } = await supabase
+      .from("parcel_lockers")
+      .select("id, city, is_active")
+      .eq("id", parcelLockerId)
+      .maybeSingle();
+    if (lockerErr || !lockerRow || !lockerRow.is_active) {
+      return new Response(JSON.stringify({ error: "invalid_parcel_locker" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (lockerRow.city !== city) {
+      return new Response(JSON.stringify({ error: "locker_city_mismatch" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const productIds = [...new Set(cleanCart.map((i) => i.product_id))];
     const { data: products, error: prodErr } = await supabase
@@ -323,12 +348,34 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    const solPrice = await fetchSolPriceEur();
-    if (!solPrice) {
+    const serverSolPrice = await fetchSolPriceEur();
+    if (!serverSolPrice) {
       return new Response(JSON.stringify({ error: "sol_price_unavailable" }), {
         status: 503,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    let solPrice = serverSolPrice;
+    const clientPrice = Number(body.expected_sol_price_eur);
+    if (
+      Number.isFinite(clientPrice) &&
+      clientPrice >= SOL_PRICE_MIN &&
+      clientPrice <= SOL_PRICE_MAX
+    ) {
+      const drift = Math.abs(clientPrice - serverSolPrice) / serverSolPrice;
+      if (drift <= 0.05) {
+        solPrice = clientPrice;
+      } else {
+        return new Response(
+          JSON.stringify({
+            error: "sol_price_drift",
+            server_price: serverSolPrice,
+            client_price: clientPrice,
+          }),
+          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
 
     const baseSol = round4(totalEur / solPrice);

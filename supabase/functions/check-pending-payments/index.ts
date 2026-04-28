@@ -124,7 +124,7 @@ Deno.serve(async (req: Request) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const cutoff = new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString();
+    const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     const { data: pendingOrders, error: pendingError } = await supabase
       .from("orders")
       .select("id, order_number, crypto_amount, created_at")
@@ -178,7 +178,7 @@ Deno.serve(async (req: Request) => {
       if (isNaN(expectedSol) || expectedSol <= 0 || !isFinite(expectedSol)) continue;
 
       const orderCreatedAtSec = new Date(order.created_at).getTime() / 1000;
-      const lookbackSec = 72 * 60 * 60;
+      const lookbackSec = 7 * 24 * 60 * 60;
 
       const candidates = validSignatures.filter(
         (s) =>
@@ -192,7 +192,9 @@ Deno.serve(async (req: Request) => {
         const txInfo = await getTransactionAmount(sig.signature);
         if (!txInfo || txInfo.receivedSol <= 0) continue;
 
-        if (Math.abs(txInfo.receivedSol - expectedSol) <= TOLERANCE) {
+        const underpaid = expectedSol - txInfo.receivedSol;
+        const overpaid = txInfo.receivedSol - expectedSol;
+        if (underpaid <= TOLERANCE && overpaid <= 0.01) {
           const { data: updated } = await supabase
             .from("orders")
             .update({
