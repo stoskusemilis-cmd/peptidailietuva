@@ -1,5 +1,5 @@
 import { X, ShoppingCart, Minus, Plus, PackageX } from 'lucide-react';
-import { Product } from '../lib/supabase';
+import { Product, isForcedOutOfStock } from '../lib/supabase';
 import { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { resolveProductImage } from '../assets/images';
@@ -15,7 +15,7 @@ export function ProductDetail({ product, onClose, onAddToCart }: ProductDetailPr
   const [selectedTier, setSelectedTier] = useState(hasTiers ? product.price_tiers![0] : null);
   const [quantity, setQuantity] = useState(1);
   const { t, lang } = useLanguage();
-  const isOutOfStock = (product.stock ?? 0) <= 0;
+  const isOutOfStock = (product.stock ?? 0) <= 0 || isForcedOutOfStock(product);
 
   const getFullDescription = () => {
     if (lang === 'en' && product.full_description_en) return product.full_description_en;

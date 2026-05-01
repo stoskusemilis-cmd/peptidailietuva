@@ -8,7 +8,7 @@ import { Checkout } from './components/Checkout';
 import { Toast } from './components/Toast';
 import { useCart } from './contexts/CartContext';
 import { useLanguage } from './contexts/LanguageContext';
-import { supabase, Product } from './lib/supabase';
+import { supabase, Product, isForcedOutOfStock } from './lib/supabase';
 import { Loader, Send, Facebook, Instagram, Clock, CheckCircle, Lock, Zap, Truck, Shield, ChevronDown, ChevronUp, Copy, Check } from 'lucide-react';
 
 const SOLANA_ADDRESS = 'A8CDFpdaLuzfZWDX2xbCXf8nXSJpz3K5urqTPGL126ai';
@@ -48,6 +48,7 @@ function App() {
 
       const productsWithTiers = (productsResult.data ?? []).map(product => ({
         ...product,
+        stock: isForcedOutOfStock(product) ? 0 : product.stock,
         price_tiers: tiersByProduct.get(product.id) ?? [],
       }));
 

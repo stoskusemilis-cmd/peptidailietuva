@@ -1,5 +1,5 @@
 import { ShoppingCart, PackageX } from 'lucide-react';
-import { Product } from '../lib/supabase';
+import { Product, isForcedOutOfStock } from '../lib/supabase';
 import { useLanguage } from '../contexts/LanguageContext';
 import { resolveProductImage } from '../assets/images';
 
@@ -13,7 +13,7 @@ interface ProductCardProps {
 export function ProductCard({ product, onViewDetails, onQuickAdd }: ProductCardProps) {
   const imageSrc = resolveProductImage(product.slug, product.image_url);
   const { t, lang } = useLanguage();
-  const isOutOfStock = (product.stock ?? 0) <= 0;
+  const isOutOfStock = (product.stock ?? 0) <= 0 || isForcedOutOfStock(product);
 
   const getDescription = () => {
     if (lang === 'en' && product.description_en) return product.description_en;

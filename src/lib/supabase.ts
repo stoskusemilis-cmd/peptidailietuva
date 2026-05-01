@@ -15,6 +15,32 @@ const supabaseAnonKey = isCorrectProjectUrl(envUrl) && envKey ? envKey : FALLBAC
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+const FORCE_OUT_OF_STOCK_NAMES = new Set([
+  'MOTS-C 40MG',
+  'TESAMORELIN 10MG',
+  'GLOW 70MG',
+  'KLOW 80MG',
+  'HGH 15IU',
+  'HGH 24IU',
+  'MASTERONE E 2000MG',
+]);
+
+const FORCE_OUT_OF_STOCK_SLUGS = new Set([
+  'mots-c-40mg',
+  'tesamorelin-10mg',
+  'glow-70mg',
+  'klow-80mg',
+  'hgh-15iu',
+  'hgh-24iu',
+  'masterone-e-2000mg',
+]);
+
+export const isForcedOutOfStock = (product: { name?: string | null; slug?: string | null }): boolean => {
+  const name = (product.name ?? '').trim().toUpperCase();
+  const slug = (product.slug ?? '').trim().toLowerCase();
+  return FORCE_OUT_OF_STOCK_NAMES.has(name) || FORCE_OUT_OF_STOCK_SLUGS.has(slug);
+};
+
 export interface PriceTier {
   id: string;
   product_id: string;
