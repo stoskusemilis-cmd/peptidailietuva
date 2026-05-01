@@ -1,14 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
 
-const FALLBACK_SUPABASE_URL = 'https://ghupwlhgageynpdegxkf.supabase.co';
+const FALLBACK_SUPABASE_URL = 'https://jgncnbmevixfvrcnistv.supabase.co';
 const FALLBACK_SUPABASE_ANON_KEY =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdodXB3bGhnYWdleW5wZGVneGtmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNzQ4MzksImV4cCI6MjA4ODg1MDgzOX0.s5ps1n2QCKytlWfFvqET8ORwtABhGFiP2RFNmiUj7WA';
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpnbmNuYm1ldml4ZnZyY25pc3R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEwNjg1NjAsImV4cCI6MjA3NjY0NDU2MH0.3kD-DhTVdB8uStOqDk7-ArDfWMr3RzRW7X70CdgK3VM';
 
 const envUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const envKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 
 const isCorrectProjectUrl = (url: string | undefined): url is string =>
-  !!url && url.includes('ghupwlhgageynpdegxkf.supabase.co');
+  !!url && url.includes('jgncnbmevixfvrcnistv.supabase.co');
 
 const supabaseUrl = isCorrectProjectUrl(envUrl) ? envUrl : FALLBACK_SUPABASE_URL;
 const supabaseAnonKey = isCorrectProjectUrl(envUrl) && envKey ? envKey : FALLBACK_SUPABASE_ANON_KEY;
