@@ -1,7 +1,8 @@
-import { X, ShoppingCart, Plus, Minus } from 'lucide-react';
+import { X, ShoppingCart, Plus, Minus, Clock } from 'lucide-react';
 import { Product } from '../lib/supabase';
 import { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { isOutOfStock } from '../lib/outOfStock';
 
 interface QuantityModalProps {
   product: Product;
@@ -12,6 +13,7 @@ interface QuantityModalProps {
 
 export function QuantityModal({ product, onClose, onAddToCart, onViewDetails }: QuantityModalProps) {
   const { t, lang } = useLanguage();
+  const outOfStock = isOutOfStock(product);
   const hasTiers = product.price_tiers && product.price_tiers.length > 0;
   const [selectedTier, setSelectedTier] = useState(hasTiers ? product.price_tiers![0] : null);
   const [quantity, setQuantity] = useState(1);
@@ -23,6 +25,7 @@ export function QuantityModal({ product, onClose, onAddToCart, onViewDetails }: 
   };
 
   const handleAdd = () => {
+    if (outOfStock) return;
     const qty = hasTiers ? selectedTier!.quantity : quantity;
     onAddToCart(product, qty);
     onClose();
@@ -118,10 +121,24 @@ export function QuantityModal({ product, onClose, onAddToCart, onViewDetails }: 
 
           <button
             onClick={handleAdd}
-            className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 active:from-cyan-600 active:to-blue-600 text-white font-bold py-3.5 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/30 mb-2"
+            disabled={outOfStock}
+            className={`w-full font-bold py-3.5 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 mb-2 ${
+              outOfStock
+                ? 'bg-white/10 text-white/50 cursor-not-allowed border border-white/10'
+                : 'bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 active:from-cyan-600 active:to-blue-600 text-white shadow-lg shadow-cyan-500/30'
+            }`}
           >
-            <ShoppingCart className="w-4 h-4" />
-            <span>{t('addToCartBtn')}</span>
+            {outOfStock ? (
+              <>
+                <Clock className="w-4 h-4" />
+                <span>{t('comingSoon')}</span>
+              </>
+            ) : (
+              <>
+                <ShoppingCart className="w-4 h-4" />
+                <span>{t('addToCartBtn')}</span>
+              </>
+            )}
           </button>
 
           <button

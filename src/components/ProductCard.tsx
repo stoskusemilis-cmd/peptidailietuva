@@ -1,6 +1,7 @@
-import { ShoppingCart } from 'lucide-react';
+import { ShoppingCart, Clock } from 'lucide-react';
 import { Product } from '../lib/supabase';
 import { useLanguage } from '../contexts/LanguageContext';
+import { isOutOfStock } from '../lib/outOfStock';
 
 interface ProductCardProps {
   product: Product;
@@ -12,6 +13,7 @@ interface ProductCardProps {
 export function ProductCard({ product, onAddToCart, onViewDetails, onQuickAdd }: ProductCardProps) {
   const imageSrc = product.image_url || null;
   const { t, lang } = useLanguage();
+  const outOfStock = isOutOfStock(product);
 
   const getDescription = () => {
     if (lang === 'en' && product.description_en) return product.description_en;
@@ -20,7 +22,13 @@ export function ProductCard({ product, onAddToCart, onViewDetails, onQuickAdd }:
   };
 
   return (
-    <div className="glass-card glass-card-hover rounded-2xl overflow-hidden transition-transform duration-300 active:scale-[0.98] hover:scale-[1.02] group">
+    <div className="glass-card glass-card-hover rounded-2xl overflow-hidden transition-transform duration-300 active:scale-[0.98] hover:scale-[1.02] group relative">
+      {outOfStock && (
+        <div className="absolute top-3 right-3 z-20 bg-amber-500/90 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5 backdrop-blur-sm">
+          <Clock className="w-3 h-3" />
+          {t('comingSoon')}
+        </div>
+      )}
       <div className="relative overflow-hidden border-b border-white/10" style={{ aspectRatio: '16/9' }}>
         <div className="absolute inset-0 bg-gradient-to-br from-cyan-400/10 to-blue-500/10"></div>
         {imageSrc ? (
@@ -79,11 +87,25 @@ export function ProductCard({ product, onAddToCart, onViewDetails, onQuickAdd }:
             {t('details')}
           </button>
           <button
-            onClick={() => onQuickAdd(product)}
-            className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 active:from-cyan-600 active:to-blue-600 text-white font-semibold text-sm py-3 px-3 rounded-xl transition-all duration-300 flex items-center justify-center gap-1.5 shadow-lg shadow-cyan-500/30"
+            onClick={() => !outOfStock && onQuickAdd(product)}
+            disabled={outOfStock}
+            className={`flex-1 font-semibold text-sm py-3 px-3 rounded-xl transition-all duration-300 flex items-center justify-center gap-1.5 ${
+              outOfStock
+                ? 'bg-white/10 text-white/50 cursor-not-allowed border border-white/10'
+                : 'bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 active:from-cyan-600 active:to-blue-600 text-white shadow-lg shadow-cyan-500/30'
+            }`}
           >
-            <ShoppingCart className="w-4 h-4 flex-shrink-0" />
-            <span>{t('addToCart')}</span>
+            {outOfStock ? (
+              <>
+                <Clock className="w-4 h-4 flex-shrink-0" />
+                <span>{t('comingSoon')}</span>
+              </>
+            ) : (
+              <>
+                <ShoppingCart className="w-4 h-4 flex-shrink-0" />
+                <span>{t('addToCart')}</span>
+              </>
+            )}
           </button>
         </div>
       </div>

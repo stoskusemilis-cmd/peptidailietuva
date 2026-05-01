@@ -278,6 +278,7 @@ const translations: Record<Language, Record<string, string>> = {
     // ProductCard
     details: 'Detaliau',
     addToCart: 'Į krepšelį',
+    comingSoon: 'Netrukus turėsime',
     // ProductDetail
     description: 'Aprašymas',
     selectQty: 'Pasirinkite kiekį',
@@ -565,6 +566,7 @@ const translations: Record<Language, Record<string, string>> = {
     // ProductCard
     details: 'Details',
     addToCart: 'Add to cart',
+    comingSoon: 'Coming soon',
     // ProductDetail
     description: 'Description',
     selectQty: 'Select quantity',
@@ -852,6 +854,7 @@ const translations: Record<Language, Record<string, string>> = {
     // ProductCard
     details: 'Подробнее',
     addToCart: 'В корзину',
+    comingSoon: 'Скоро в наличии',
     // ProductDetail
     description: 'Описание',
     selectQty: 'Выберите количество',

@@ -1,7 +1,8 @@
-import { X, ShoppingCart, Minus, Plus } from 'lucide-react';
+import { X, ShoppingCart, Minus, Plus, Clock } from 'lucide-react';
 import { Product } from '../lib/supabase';
 import { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { isOutOfStock } from '../lib/outOfStock';
 
 interface ProductDetailProps {
   product: Product;
@@ -14,6 +15,7 @@ export function ProductDetail({ product, onClose, onAddToCart }: ProductDetailPr
   const [selectedTier, setSelectedTier] = useState(hasTiers ? product.price_tiers![0] : null);
   const [quantity, setQuantity] = useState(1);
   const { t, lang } = useLanguage();
+  const outOfStock = isOutOfStock(product);
 
   const getFullDescription = () => {
     if (lang === 'en' && product.full_description_en) return product.full_description_en;
@@ -24,6 +26,7 @@ export function ProductDetail({ product, onClose, onAddToCart }: ProductDetailPr
   const imageSrc = product.image_url || null;
 
   const handleAddToCart = () => {
+    if (outOfStock) return;
     const tierQuantity = selectedTier?.quantity || quantity;
     onAddToCart(product, tierQuantity);
     onClose();
@@ -165,10 +168,24 @@ export function ProductDetail({ product, onClose, onAddToCart }: ProductDetailPr
 
           <button
             onClick={handleAddToCart}
-            className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 active:from-cyan-600 active:to-blue-600 text-white font-bold py-3.5 sm:py-4 px-6 rounded-xl transition-all duration-300 flex items-center justify-center space-x-2 shadow-lg shadow-cyan-500/30 mb-3"
+            disabled={outOfStock}
+            className={`w-full font-bold py-3.5 sm:py-4 px-6 rounded-xl transition-all duration-300 flex items-center justify-center space-x-2 mb-3 ${
+              outOfStock
+                ? 'bg-white/10 text-white/50 cursor-not-allowed border border-white/10'
+                : 'bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 active:from-cyan-600 active:to-blue-600 text-white shadow-lg shadow-cyan-500/30'
+            }`}
           >
-            <ShoppingCart className="w-5 h-5" />
-            <span>{t('addToCartBtn')}</span>
+            {outOfStock ? (
+              <>
+                <Clock className="w-5 h-5" />
+                <span>{t('comingSoon')}</span>
+              </>
+            ) : (
+              <>
+                <ShoppingCart className="w-5 h-5" />
+                <span>{t('addToCartBtn')}</span>
+              </>
+            )}
           </button>
 
           <div className="text-center text-base font-semibold">

@@ -9,6 +9,7 @@ import { Toast } from './components/Toast';
 import { useCart } from './contexts/CartContext';
 import { useLanguage } from './contexts/LanguageContext';
 import { supabase, Product } from './lib/supabase';
+import { isOutOfStock } from './lib/outOfStock';
 import { Loader, Mail, Send, Facebook, Instagram, Clock, CheckCircle, Lock, Zap, Truck, Shield, ChevronDown, ChevronUp, Copy, Check } from 'lucide-react';
 
 const SOLANA_ADDRESS = 'A8CDFpdaLuzfZWDX2xbCXf8nXSJpz3K5urqTPGL126ai';
@@ -62,6 +63,7 @@ function App() {
   const handleCloseToast = useCallback(() => setShowToast(false), []);
 
   const handleAddToCart = (product: Product, quantity = 1) => {
+    if (isOutOfStock(product)) return;
     addToCart(product, quantity);
     setToastMessage(`${product.name} ${t('addedToCart')}`);
     setShowToast(true);
