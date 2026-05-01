@@ -1,17 +1,19 @@
-import { ShoppingCart } from 'lucide-react';
-import { Product } from '../lib/supabase';
+import { ShoppingCart, PackageX } from 'lucide-react';
+import { Product, isForcedOutOfStock } from '../lib/supabase';
 import { useLanguage } from '../contexts/LanguageContext';
+import { resolveProductImage } from '../assets/images';
 
 interface ProductCardProps {
   product: Product;
-  onAddToCart: (product: Product) => void;
+  onAddToCart?: (product: Product) => void;
   onViewDetails: (product: Product) => void;
   onQuickAdd: (product: Product) => void;
 }
 
-export function ProductCard({ product, onAddToCart, onViewDetails, onQuickAdd }: ProductCardProps) {
-  const imageSrc = product.image_url || null;
+export function ProductCard({ product, onViewDetails, onQuickAdd }: ProductCardProps) {
+  const imageSrc = resolveProductImage(product.slug, product.image_url);
   const { t, lang } = useLanguage();
+  const isOutOfStock = (product.stock ?? 0) <= 0 || isForcedOutOfStock(product);
 
   const getDescription = () => {
     if (lang === 'en' && product.description_en) return product.description_en;
@@ -23,11 +25,17 @@ export function ProductCard({ product, onAddToCart, onViewDetails, onQuickAdd }:
     <div className="glass-card glass-card-hover rounded-2xl overflow-hidden transition-transform duration-300 active:scale-[0.98] hover:scale-[1.02] group">
       <div className="relative overflow-hidden border-b border-white/10" style={{ aspectRatio: '16/9' }}>
         <div className="absolute inset-0 bg-gradient-to-br from-cyan-400/10 to-blue-500/10"></div>
+        {isOutOfStock && (
+          <div className="absolute top-3 right-3 z-20 flex items-center gap-1.5 bg-amber-500/95 text-amber-950 text-xs font-bold px-3 py-1.5 rounded-full shadow-lg backdrop-blur-sm">
+            <PackageX className="w-3.5 h-3.5" />
+            <span>{t('restockSoon')}</span>
+          </div>
+        )}
         {imageSrc ? (
           <img
             src={imageSrc}
             alt={product.name}
-            className="w-full h-full object-contain relative z-10 group-hover:scale-105 transition-transform duration-500"
+            className={`w-full h-full object-contain relative z-10 group-hover:scale-105 transition-transform duration-500 ${isOutOfStock ? 'grayscale opacity-60' : ''}`}
             loading="lazy"
             decoding="async"
           />
@@ -78,13 +86,23 @@ export function ProductCard({ product, onAddToCart, onViewDetails, onQuickAdd }:
           >
             {t('details')}
           </button>
-          <button
-            onClick={() => onQuickAdd(product)}
-            className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 active:from-cyan-600 active:to-blue-600 text-white font-semibold text-sm py-3 px-3 rounded-xl transition-all duration-300 flex items-center justify-center gap-1.5 shadow-lg shadow-cyan-500/30"
-          >
-            <ShoppingCart className="w-4 h-4 flex-shrink-0" />
-            <span>{t('addToCart')}</span>
-          </button>
+          {isOutOfStock ? (
+            <button
+              disabled
+              className="flex-1 bg-white/5 text-amber-300/90 font-semibold text-sm py-3 px-3 rounded-xl border border-amber-400/30 flex items-center justify-center gap-1.5 cursor-not-allowed"
+            >
+              <PackageX className="w-4 h-4 flex-shrink-0" />
+              <span>{t('restockSoon')}</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => onQuickAdd(product)}
+              className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 active:from-cyan-600 active:to-blue-600 text-white font-semibold text-sm py-3 px-3 rounded-xl transition-all duration-300 flex items-center justify-center gap-1.5 shadow-lg shadow-cyan-500/30"
+            >
+              <ShoppingCart className="w-4 h-4 flex-shrink-0" />
+              <span>{t('addToCart')}</span>
+            </button>
+          )}
         </div>
       </div>
     </div>

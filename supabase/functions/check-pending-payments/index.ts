@@ -42,21 +42,6 @@ async function rpcFetch(body: object, retries = 3): Promise<Response> {
   throw lastErr;
 }
 
-async function getRecentTransactions(limit = 200): Promise<Array<{ signature: string; blockTime: number | null; err: null | object }>> {
-  try {
-    const res = await rpcFetch({
-      jsonrpc: "2.0",
-      id: 1,
-      method: "getSignaturesForAddress",
-      params: [SOLANA_ADDRESS, { limit }],
-    });
-    const data = await res.json();
-    return data?.result ?? [];
-  } catch {
-    return [];
-  }
-}
-
 type SbClient = ReturnType<typeof createClient>;
 
 async function decrementStockForOrder(
@@ -80,6 +65,21 @@ async function decrementStockForOrder(
     } catch (e) {
       console.error("decrement_product_stock failed", { orderId, pid, qty, e });
     }
+  }
+}
+
+async function getRecentTransactions(limit = 200): Promise<Array<{ signature: string; blockTime: number | null; err: null | object }>> {
+  try {
+    const res = await rpcFetch({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "getSignaturesForAddress",
+      params: [SOLANA_ADDRESS, { limit }],
+    });
+    const data = await res.json();
+    return data?.result ?? [];
+  } catch {
+    return [];
   }
 }
 
@@ -119,63 +119,50 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { order_id } = await req.json();
-
-    if (!order_id || typeof order_id !== "string") {
-      return new Response(JSON.stringify({ error: "Missing order_id" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { data: order, error: orderError } = await supabase
+    const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const { data: pendingOrders, error: pendingError } = await supabase
       .from("orders")
-      .select("id, payment_status, transaction_signature, crypto_amount, created_at")
-      .eq("id", order_id)
-      .maybeSingle();
+      .select("id, order_number, crypto_amount, created_at")
+      .eq("payment_status", "pending")
+      .gte("created_at", cutoff)
+      .order("created_at", { ascending: false });
 
-    if (orderError || !order) {
-      return new Response(JSON.stringify({ error: "Order not found" }), {
-        status: 404,
+    if (pendingError) {
+      console.error("Failed to fetch pending orders:", pendingError);
+      return new Response(JSON.stringify({ error: String(pendingError) }), {
+        status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    if (order.payment_status === "paid") {
-      return new Response(JSON.stringify({ confirmed: true, signature: order.transaction_signature }), {
+    if (!pendingOrders || pendingOrders.length === 0) {
+      return new Response(JSON.stringify({ checked: 0, confirmed: 0 }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const expectedSolNum = parseFloat(order.crypto_amount);
-    if (isNaN(expectedSolNum) || expectedSolNum <= 0 || !isFinite(expectedSolNum)) {
-      return new Response(JSON.stringify({ error: "Invalid crypto_amount in order" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const orderCreatedAt = new Date(order.created_at).getTime() / 1000;
-    const lookbackSeconds = 7 * 24 * 60 * 60;
+    console.log(`Checking ${pendingOrders.length} pending orders`);
 
     const allSignatures = await getRecentTransactions(200);
+    const validSignatures = allSignatures.filter((s) => s.err === null && s.blockTime != null);
 
-    const candidateSignatures = allSignatures.filter(
-      (s) => s.err === null && s.blockTime != null && s.blockTime >= (orderCreatedAt - 300)
-        && s.blockTime <= (orderCreatedAt + lookbackSeconds)
-    );
+    if (validSignatures.length === 0) {
+      console.log("No valid signatures from RPC");
+      return new Response(JSON.stringify({ checked: pendingOrders.length, confirmed: 0, rpc_empty: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
-    const windowStart = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     const { data: paidOrders } = await supabase
       .from("orders")
       .select("transaction_signature")
       .eq("payment_status", "paid")
-      .gte("payment_confirmed_at", windowStart)
+      .gte("created_at", cutoff)
       .not("transaction_signature", "is", null);
 
     const usedSignatures = new Set(
@@ -184,74 +171,86 @@ Deno.serve(async (req: Request) => {
         .filter(Boolean) as string[]
     );
 
-    for (const sig of candidateSignatures) {
-      if (usedSignatures.has(sig.signature)) continue;
+    const results: Array<{ order_number: string; confirmed: boolean }> = [];
 
-      const txInfo = await getTransactionAmount(sig.signature);
-      if (!txInfo) continue;
-      if (txInfo.receivedSol <= 0) continue;
+    for (const order of pendingOrders) {
+      const expectedSol = parseFloat(order.crypto_amount);
+      if (isNaN(expectedSol) || expectedSol <= 0 || !isFinite(expectedSol)) continue;
 
-      const underpaid = expectedSolNum - txInfo.receivedSol;
-      const overpaid = txInfo.receivedSol - expectedSolNum;
-      const acceptable = underpaid <= TOLERANCE && overpaid <= 0.01;
-      if (acceptable) {
-        const { data: updated } = await supabase
-          .from("orders")
-          .update({
-            payment_status: "paid",
-            order_status: "confirmed",
-            status: "paid",
-            transaction_signature: sig.signature,
-            payment_confirmed_at: new Date().toISOString(),
-          })
-          .eq("id", order_id)
-          .eq("payment_status", "pending")
-          .select("id, order_items")
-          .maybeSingle();
+      const orderCreatedAtSec = new Date(order.created_at).getTime() / 1000;
+      const lookbackSec = 7 * 24 * 60 * 60;
 
-        if (!updated) {
-          const { data: existing } = await supabase
+      const candidates = validSignatures.filter(
+        (s) =>
+          !usedSignatures.has(s.signature) &&
+          s.blockTime! >= (orderCreatedAtSec - 300) &&
+          s.blockTime! <= (orderCreatedAtSec + lookbackSec)
+      );
+
+      let matched = false;
+      for (const sig of candidates) {
+        const txInfo = await getTransactionAmount(sig.signature);
+        if (!txInfo || txInfo.receivedSol <= 0) continue;
+
+        const underpaid = expectedSol - txInfo.receivedSol;
+        const overpaid = txInfo.receivedSol - expectedSol;
+        if (underpaid <= TOLERANCE && overpaid <= 0.01) {
+          const { data: updated } = await supabase
             .from("orders")
-            .select("transaction_signature")
-            .eq("id", order_id)
+            .update({
+              payment_status: "paid",
+              order_status: "confirmed",
+              status: "paid",
+              transaction_signature: sig.signature,
+              payment_confirmed_at: new Date().toISOString(),
+            })
+            .eq("id", order.id)
+            .eq("payment_status", "pending")
+            .select("id, order_items")
             .maybeSingle();
-          return new Response(
-            JSON.stringify({ confirmed: true, signature: existing?.transaction_signature ?? sig.signature }),
-            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
 
-        await decrementStockForOrder(supabase, order_id, updated.order_items);
+          if (updated) {
+            usedSignatures.add(sig.signature);
+            matched = true;
+            console.log(`Confirmed order ${order.order_number} with tx ${sig.signature}`);
 
-        EdgeRuntime.waitUntil((async () => {
-          try {
-            const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-            const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-            await fetch(`${supabaseUrl}/functions/v1/send-order-email`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${supabaseKey}`,
-              },
-              body: JSON.stringify({ order_id, type: "payment_confirmed" }),
-            });
-          } catch (e) {
-            console.error("Failed to send payment confirmation email:", e);
+            await decrementStockForOrder(supabase, order.id, updated.order_items);
+
+            try {
+              const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+              const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+              await fetch(`${supabaseUrl}/functions/v1/send-order-email`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": `Bearer ${supabaseKey}`,
+                },
+                body: JSON.stringify({ order_id: order.id, type: "payment_confirmed" }),
+              });
+            } catch (e) {
+              console.error("Failed to send email for order", order.order_number, e);
+            }
           }
-        })());
 
-        return new Response(
-          JSON.stringify({ confirmed: true, signature: sig.signature, received_sol: txInfo.receivedSol }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+          results.push({ order_number: order.order_number, confirmed: !!updated });
+          break;
+        }
+      }
+
+      if (!matched) {
+        results.push({ order_number: order.order_number, confirmed: false });
       }
     }
 
-    return new Response(JSON.stringify({ confirmed: false }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    const confirmedCount = results.filter((r) => r.confirmed).length;
+    console.log(`Done: checked ${pendingOrders.length}, confirmed ${confirmedCount}`);
+
+    return new Response(
+      JSON.stringify({ checked: pendingOrders.length, confirmed: confirmedCount, results }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   } catch (err) {
-    console.error("verify-solana-payment error:", err);
+    console.error("check-pending-payments error:", err);
     return new Response(JSON.stringify({ error: String(err) }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

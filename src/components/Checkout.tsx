@@ -20,7 +20,8 @@ export function Checkout({ onClose }: CheckoutProps) {
   const [loading, setLoading] = useState(false);
   const [orderError, setOrderError] = useState('');
   const [orderNumber, setOrderNumber] = useState('');
-  const [solPrice, setSolPrice] = useState<number>(150);
+  const [solPrice, setSolPrice] = useState<number | null>(null);
+  const [solPriceError, setSolPriceError] = useState<boolean>(false);
   const [copySuccess, setCopySuccess] = useState<'address' | 'sol' | null>(null);
   const [selectedPayment, setSelectedPayment] = useState<PaymentMethod>(null);
   const [expandedGuide, setExpandedGuide] = useState<PaymentMethod>(null);
@@ -33,10 +34,11 @@ export function Checkout({ onClose }: CheckoutProps) {
   const [orderId, setOrderId] = useState('');
   const [paymentConfirmed, setPaymentConfirmed] = useState(false);
   const [paymentChecking, setPaymentChecking] = useState(false);
-  const [nextCheckIn, setNextCheckIn] = useState(60);
+  const [nextCheckIn, setNextCheckIn] = useState(5);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const submittingRef = useRef(false);
+  const paymentConfirmedRef = useRef(false);
 
   const [cities, setCities] = useState<string[]>([]);
   const [parcelLockers, setParcelLockers] = useState<ParcelLocker[]>([]);
@@ -57,25 +59,63 @@ export function Checkout({ onClose }: CheckoutProps) {
   const [lockedSolPrice, setLockedSolPrice] = useState<number | null>(null);
   const [uniqueSolOffset, setUniqueSolOffset] = useState<number>(0);
 
+  type LockedSnapshot = {
+    cart: typeof cart;
+    appliedDiscount: typeof appliedDiscount;
+    subtotalEur: number;
+    discountAmount: number;
+    shippingFee: number;
+    totalEurWithFee: number;
+    solAmount: string;
+    solPrice: number;
+    offset: number;
+  };
+  const [locked, setLocked] = useState<LockedSnapshot | null>(null);
+
   const SHIPPING_FEE_EUR = 3.5;
   const FREE_SHIPPING_THRESHOLD = 50;
-  const totalEur = getTotalPrice();
-  const discountAmount = appliedDiscount ? parseFloat((totalEur * appliedDiscount.percent / 100).toFixed(2)) : 0;
-  const discountedTotal = totalEur - discountAmount;
-  const shippingFee = totalEur >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE_EUR;
-  const totalEurWithFee = discountedTotal + shippingFee;
-  const activeSolPrice = lockedSolPrice ?? solPrice;
-  const baseSolAmount = parseFloat((totalEurWithFee / activeSolPrice).toFixed(4));
-  const solAmount = (baseSolAmount + uniqueSolOffset).toFixed(4);
+  const liveTotalEur = getTotalPrice();
+  const liveDiscountAmount = appliedDiscount ? parseFloat((liveTotalEur * appliedDiscount.percent / 100).toFixed(2)) : 0;
+  const liveDiscountedTotal = liveTotalEur - liveDiscountAmount;
+  const liveShippingFee = liveDiscountedTotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE_EUR;
+  const liveTotalEurWithFee = liveDiscountedTotal + liveShippingFee;
+  const liveBaseSolAmount = solPrice ? parseFloat((liveTotalEurWithFee / solPrice).toFixed(4)) : 0;
+  const liveSolAmount = solPrice ? (liveBaseSolAmount + uniqueSolOffset).toFixed(5) : '0';
+
+  const totalEur = locked ? locked.subtotalEur : liveTotalEur;
+  const discountAmount = locked ? locked.discountAmount : liveDiscountAmount;
+  const shippingFee = locked ? locked.shippingFee : liveShippingFee;
+  const totalEurWithFee = locked ? locked.totalEurWithFee : liveTotalEurWithFee;
+  const solAmount = locked ? locked.solAmount : liveSolAmount;
+  const displayCart = locked ? locked.cart : cart;
+  const displayAppliedDiscount = locked ? locked.appliedDiscount : appliedDiscount;
 
   useEffect(() => {
     let active = true;
     const fetchAndSet = async () => {
       try {
-        const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=eur');
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+        const res = await fetch(`${supabaseUrl}/functions/v1/get-sol-price`, {
+          headers: { 'Authorization': `Bearer ${supabaseKey}` },
+        });
+        if (!res.ok) {
+          if (active) setSolPriceError(true);
+          return;
+        }
         const data = await res.json();
-        if (active && data.solana?.eur) setSolPrice(data.solana.eur);
-      } catch {}
+        const price = typeof data?.price_eur === 'number' ? data.price_eur : null;
+        if (active) {
+          if (price && price > 0) {
+            setSolPrice(price);
+            setSolPriceError(false);
+          } else {
+            setSolPriceError(true);
+          }
+        }
+      } catch {
+        if (active) setSolPriceError(true);
+      }
     };
     fetchCitiesAndLockers();
     fetchAndSet();
@@ -112,9 +152,10 @@ export function Checkout({ onClose }: CheckoutProps) {
         });
         const data = await res.json();
         if (!cancelled && data.confirmed) {
-          setPaymentConfirmed(true);
           if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
           if (countdownRef.current) clearInterval(countdownRef.current);
+          paymentConfirmedRef.current = true;
+          setPaymentConfirmed(true);
           setStep('success');
         }
       } catch {}
@@ -125,15 +166,15 @@ export function Checkout({ onClose }: CheckoutProps) {
 
     countdownRef.current = setInterval(() => {
       setNextCheckIn(prev => {
-        if (prev <= 1) return 60;
+        if (prev <= 1) return 5;
         return prev - 1;
       });
     }, 1000);
 
     pollIntervalRef.current = setInterval(() => {
-      setNextCheckIn(60);
+      setNextCheckIn(5);
       checkPayment();
-    }, 60000);
+    }, 5000);
 
     return () => {
       cancelled = true;
@@ -212,7 +253,6 @@ export function Checkout({ onClose }: CheckoutProps) {
   };
 
   const generateUniqueOffset = async (baseAmount: number): Promise<number> => {
-    const offsets = [0.0001, 0.0002, 0.0003, 0.0004, 0.0005, 0.0006, 0.0007, 0.0008, 0.0009];
     try {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -229,142 +269,141 @@ export function Checkout({ onClose }: CheckoutProps) {
         if (typeof data.offset === 'number') return data.offset;
       }
     } catch {}
-    return offsets[Math.floor(Math.random() * offsets.length)];
+    const fallback = (Math.floor(Math.random() * 99) + 1) * 0.00001;
+    return parseFloat(fallback.toFixed(5));
   };
 
   const handleInfoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.phone.trim()) {
+      setOrderError(t('phoneRequired') || 'Įveskite telefono numerį.');
+      return;
+    }
     if (!validatePhone(formData.phone)) {
       setOrderError(t('invalidPhone') || 'Neteisingas telefono numeris.');
       return;
     }
+    if (!formData.city.trim()) {
+      setOrderError(t('cityRequired') || 'Pasirinkite miestą.');
+      return;
+    }
+    if (!formData.parcelLocker.trim()) {
+      setOrderError(t('lockerRequired') || 'Pasirinkite paštomatą.');
+      return;
+    }
+    const lockerStillValid = filteredLockers.some(l => l.id === formData.parcelLocker);
+    if (!lockerStillValid) {
+      setOrderError(t('lockerRequired') || 'Pasirinkite paštomatą.');
+      return;
+    }
     setOrderError('');
+    if (!solPrice || solPrice <= 0) {
+      setOrderError(t('solPriceUnavailable') || 'SOL kursas šiuo metu nepasiekiamas. Pabandykite po kelių sekundžių.');
+      return;
+    }
     const currentSolPrice = solPrice;
-    setLockedSolPrice(currentSolPrice);
-    const base = parseFloat((totalEurWithFee / currentSolPrice).toFixed(4));
+    const subtotalNow = liveTotalEur;
+    const discountNow = liveDiscountAmount;
+    const discountedNow = subtotalNow - discountNow;
+    const shippingNow = discountedNow >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE_EUR;
+    const totalNow = parseFloat((discountedNow + shippingNow).toFixed(2));
+    const base = parseFloat((totalNow / currentSolPrice).toFixed(4));
     const offset = await generateUniqueOffset(base);
+    const finalSolAmount = (base + offset).toFixed(5);
+
+    setLockedSolPrice(currentSolPrice);
     setUniqueSolOffset(offset);
+    setLocked({
+      cart: [...cart],
+      appliedDiscount: appliedDiscount ? { ...appliedDiscount } : null,
+      subtotalEur: subtotalNow,
+      discountAmount: discountNow,
+      shippingFee: shippingNow,
+      totalEurWithFee: totalNow,
+      solAmount: finalSolAmount,
+      solPrice: currentSolPrice,
+      offset,
+    });
     setStep('payment');
   };
 
   const handleConfirmPayment = async () => {
     if (!selectedPayment) return;
+    if (!locked || locked.cart.length === 0) return;
     if (submittingRef.current) return;
     submittingRef.current = true;
     setLoading(true);
     setOrderError('');
     try {
       const selectedLocker = filteredLockers.find(l => l.id === formData.parcelLocker);
-      const orderItems = cart.map(item => {
-        const tier = item.product.price_tiers?.find(t => t.quantity === item.quantity);
-        const lineTotal = tier ? tier.price : item.product.price * item.quantity;
-        return {
-          product_id: item.product.id,
-          product_name: item.product.name,
-          quantity: item.quantity,
-          price: tier ? parseFloat((tier.price / item.quantity).toFixed(4)) : item.product.price,
-          line_total: parseFloat(lineTotal.toFixed(2)),
-        };
-      });
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-      const fullOrderDetails = {
-        items: orderItems,
-        phone: formData.phone,
-        city: formData.city,
-        parcel_locker: selectedLocker
-          ? { id: selectedLocker.id, provider: selectedLocker.provider, address: selectedLocker.address, locker_code: selectedLocker.locker_code }
-          : null,
-        pricing: {
-          subtotal_eur: totalEur,
-          discount_code: appliedDiscount?.code || null,
-          discount_percent: appliedDiscount?.percent || null,
-          discount_amount_eur: discountAmount,
-          discounted_subtotal_eur: discountedTotal,
-          shipping_fee_eur: shippingFee,
-          total_eur: totalEurWithFee,
-          sol_price_eur: lockedSolPrice ?? solPrice,
-          base_sol: baseSolAmount,
-          unique_sol_offset: uniqueSolOffset,
-          total_sol: solAmount,
-          commission_percent: appliedDiscount?.commission || null,
+      const createRes = await fetch(`${supabaseUrl}/functions/v1/create-order`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseKey}`,
         },
-        payment_method: selectedPayment,
-        wallet_address: SOLANA_ADDRESS,
-        crypto_type: 'SOL',
-      };
-
-      const { data: order, error } = await supabase
-        .from('orders')
-        .insert({
+        body: JSON.stringify({
+          cart: locked.cart.map(item => ({ product_id: item.product.id, quantity: item.quantity })),
           customer_phone: formData.phone,
           customer_city: formData.city,
-          delivery_method: 'parcel_locker',
           parcel_locker_id: formData.parcelLocker || null,
-          order_items: orderItems,
-          total_amount: totalEurWithFee,
-          subtotal_amount: totalEur,
-          discount_code: appliedDiscount?.code || null,
-          discount_percent: appliedDiscount?.percent || null,
-          discount_amount: discountAmount,
-          crypto_amount: parseFloat(solAmount),
-          unique_sol_offset: uniqueSolOffset,
-          payment_status: 'pending',
-          order_status: 'pending',
-          full_order_details: fullOrderDetails,
-          shipping_address: {
-            crypto_type: 'SOL',
-            wallet_address: SOLANA_ADDRESS,
-            payment_method: selectedPayment,
-            shipping_fee_eur: shippingFee,
-            original_total_eur: totalEur,
-          },
-        })
-        .select()
-        .maybeSingle();
+          payment_method: selectedPayment,
+          discount_code: locked.appliedDiscount?.code ?? null,
+          expected_sol_price_eur: locked.solPrice,
+          expected_sol_amount: locked.solAmount,
+          expected_total_eur: locked.totalEurWithFee,
+        }),
+      });
 
-      if (error) throw error;
-      if (!order) throw new Error('Failed to create order');
-
-      if (appliedDiscount) {
-        try { await supabase.rpc('increment_discount_usage', { p_code: appliedDiscount.code }); } catch {}
+      const createData = await createRes.json().catch(() => ({}));
+      if (!createRes.ok || !createData?.ok) {
+        const code = createData?.error || 'order_failed';
+        const messages: Record<string, string> = {
+          empty_cart: t('checkoutCodeError') || 'Krepšelis tuščias.',
+          too_many_items: 'Per daug prekių krepšelyje.',
+          invalid_phone: t('invalidPhone') || 'Neteisingas telefono numeris.',
+          invalid_city: t('cityRequired') || 'Pasirinkite miestą.',
+          invalid_payment_method: 'Pasirinktas mokėjimo būdas negalimas.',
+          invalid_cart_item: 'Krepšelyje yra netinkamų prekių.',
+          product_unavailable: 'Vienos iš prekių laikinai nėra.',
+          insufficient_stock: 'Likučio nepakanka. Sumažinkite kiekį.',
+          invalid_discount_code: t('checkoutDiscountError') || 'Neteisingas nuolaidos kodas.',
+          parcel_locker_required: t('lockerRequired') || 'Pasirinkite paštomatą.',
+          invalid_parcel_locker: t('lockerRequired') || 'Pasirinkite paštomatą.',
+          locker_city_mismatch: t('lockerRequired') || 'Pasirinkite paštomatą.',
+          sol_price_unavailable: t('solPriceUnavailable') || 'SOL kursas šiuo metu nepasiekiamas.',
+          sol_price_drift: 'SOL kursas pasikeitė. Atnaujinkite puslapį ir pabandykite dar kartą.',
+          sol_amount_drift: 'SOL suma pasikeitė. Atnaujinkite puslapį ir pabandykite dar kartą.',
+          total_eur_drift: 'Suma pasikeitė. Grįžkite atgal ir patikrinkite krepšelį.',
+          order_insert_failed: t('checkoutCodeError') || 'Užsakymo įrašyti nepavyko.',
+        };
+        setOrderError(messages[code] || (t('checkoutCodeError') || 'Užsakymo sukurti nepavyko.'));
+        return;
       }
 
-      try {
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-        const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-        const emailRes = await fetch(`${supabaseUrl}/functions/v1/send-order-email`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${supabaseKey}`,
-          },
-          body: JSON.stringify({ order_id: order.id }),
-        });
-        if (!emailRes.ok) {
-          console.error('send-order-email failed:', emailRes.status, await emailRes.text());
-        }
-      } catch (err) {
-        console.error('send-order-email error:', err);
-      }
+      const computedSolAmount = String(createData.sol_amount);
 
-      setSnapshotCart([...cart]);
-      setSnapshotTotalEur(totalEur);
-      setSnapshotShippingFee(shippingFee);
-      setSnapshotSolAmount(solAmount);
+      setSnapshotCart([...locked.cart]);
+      setSnapshotTotalEur(locked.subtotalEur);
+      setSnapshotShippingFee(locked.shippingFee);
+      setSnapshotSolAmount(computedSolAmount);
       setSnapshotSelectedLocker(selectedLocker);
-      setSnapshotDiscount(appliedDiscount ? { ...appliedDiscount, amount: discountAmount, commission: appliedDiscount.commission } : null);
+      setSnapshotDiscount(locked.appliedDiscount ? { ...locked.appliedDiscount, amount: locked.discountAmount, commission: locked.appliedDiscount.commission } : null);
       setSnapshotPaymentMethod(selectedPayment);
-      setOrderNumber(order.order_number);
-      setOrderId(order.id);
+      setOrderNumber(createData.order_number);
+      setOrderId(createData.order_id);
       clearCart();
 
       if (selectedPayment === 'swaps') {
-        const swapsUrl = `https://www.swaps.app/?side=buy&amount=${solAmount}&fiat=EUR&to=SOL%3Asolana&country=LT&method=apple_pay&toAddress=${SOLANA_ADDRESS}`;
+        const swapsUrl = `https://www.swaps.app/?side=buy&amount=${computedSolAmount}&to=SOL%3Asolana&country=LT&toAddress=${SOLANA_ADDRESS}`;
         window.open(swapsUrl, '_blank');
       }
 
       if (selectedPayment === 'paybis') {
-        const paybisUrl = `https://paybis.com/buy-solana/?fromCurrencyCode=EUR&fromAmount=${totalEurWithFee.toFixed(2)}&toCurrencyCode=SOL&toAddress=${SOLANA_ADDRESS}`;
+        const paybisUrl = `https://paybis.com/buy-solana/?fromCurrencyCode=EUR&toCurrencyCode=SOL&toAmount=${computedSolAmount}&toAddress=${SOLANA_ADDRESS}`;
         window.open(paybisUrl, '_blank');
       }
 
@@ -454,7 +493,7 @@ export function Checkout({ onClose }: CheckoutProps) {
 
             {snapshotPaymentMethod === 'swaps' && (
               <a
-                href={`https://www.swaps.app/?side=buy&amount=${snapshotSolAmount}&fiat=EUR&to=SOL%3Asolana&country=LT&method=apple_pay&toAddress=${SOLANA_ADDRESS}`}
+                href={`https://www.swaps.app/?side=buy&amount=${snapshotSolAmount}&to=SOL%3Asolana&country=LT&toAddress=${SOLANA_ADDRESS}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2 w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-3 px-5 rounded-xl mb-4 transition-colors text-sm"
@@ -470,7 +509,7 @@ export function Checkout({ onClose }: CheckoutProps) {
 
             {snapshotPaymentMethod === 'paybis' && (
               <a
-                href={`https://paybis.com/buy-solana/?fromCurrencyCode=EUR&fromAmount=${(snapshotTotalEur - (snapshotDiscount?.amount || 0) + snapshotShippingFee).toFixed(2)}&toCurrencyCode=SOL&toAddress=${SOLANA_ADDRESS}`}
+                href={`https://paybis.com/buy-solana/?fromCurrencyCode=EUR&toCurrencyCode=SOL&toAmount=${snapshotSolAmount}&toAddress=${SOLANA_ADDRESS}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2 w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-5 rounded-xl mb-4 transition-colors text-sm"
@@ -478,7 +517,7 @@ export function Checkout({ onClose }: CheckoutProps) {
                 <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" fill="currentColor">
                   <path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/>
                 </svg>
-                Mokėti kortele per Paybis — {(snapshotTotalEur - (snapshotDiscount?.amount || 0) + snapshotShippingFee).toFixed(2)}€
+                Mokėti per Paybis — {snapshotSolAmount} SOL
               </a>
             )}
 
@@ -527,7 +566,7 @@ export function Checkout({ onClose }: CheckoutProps) {
               <p className="text-2xl font-bold text-white">{orderNumber}</p>
             </div>
 
-            {paymentConfirmed ? (
+            {(paymentConfirmed || paymentConfirmedRef.current) ? (
               <div className="bg-green-500/20 border-2 border-green-400/50 rounded-xl p-6 mb-6">
                 <div className="flex items-center justify-center gap-3 mb-2">
                   <CheckCircle className="w-8 h-8 text-green-400" />
@@ -558,107 +597,111 @@ export function Checkout({ onClose }: CheckoutProps) {
               </div>
             )}
 
-            <div className="bg-gradient-to-r from-blue-600/30 to-cyan-600/30 border-2 border-blue-400/40 rounded-xl p-6 mb-6">
-              <div className="flex items-center justify-center mb-4">
-                <Wallet className="w-8 h-8 text-blue-300 mr-3" />
-                <p className="text-blue-100 text-base sm:text-xl font-bold">{t('successMakePayment')}</p>
-              </div>
+            {!(paymentConfirmed || paymentConfirmedRef.current) && (
+              <>
+                <div className="bg-gradient-to-r from-blue-600/30 to-cyan-600/30 border-2 border-blue-400/40 rounded-xl p-6 mb-6">
+                  <div className="flex items-center justify-center mb-4">
+                    <Wallet className="w-8 h-8 text-blue-300 mr-3" />
+                    <p className="text-blue-100 text-base sm:text-xl font-bold">{t('successMakePayment')}</p>
+                  </div>
 
-              <div className="bg-white/10 rounded-lg p-4 mb-4">
-                <p className="text-base text-white/60 mb-2">{t('successPaymentAmount')}</p>
-                <p className="text-3xl font-bold text-white mb-1">{snapshotSolAmount} SOL</p>
-                <p className="text-base text-white/60">
-                  ≈ {successTotalWithFee.toFixed(2)}€
-                  {snapshotShippingFee > 0
-                    ? <> ({t('checkoutProducts')} {snapshotTotalEur.toFixed(2)}€ + {t('checkoutShipping')} {snapshotShippingFee.toFixed(2)}€)</>
-                    : <> ({t('checkoutProducts')} {snapshotTotalEur.toFixed(2)}€ + {t('cartFree')})</>}
-                </p>
-              </div>
+                  <div className="bg-white/10 rounded-lg p-4 mb-4">
+                    <p className="text-base text-white/60 mb-2">{t('successPaymentAmount')}</p>
+                    <p className="text-3xl font-bold text-white mb-1">{snapshotSolAmount} SOL</p>
+                    <p className="text-base text-white/60">
+                      ≈ {successTotalWithFee.toFixed(2)}€
+                      {snapshotShippingFee > 0
+                        ? <> ({t('checkoutProducts')} {snapshotTotalEur.toFixed(2)}€ + {t('checkoutShipping')} {snapshotShippingFee.toFixed(2)}€)</>
+                        : <> ({t('checkoutProducts')} {snapshotTotalEur.toFixed(2)}€ + {t('cartFree')})</>}
+                    </p>
+                  </div>
 
-              <div className="space-y-3">
-                <div>
-                  <p className="text-white/50 text-xs mb-1.5 font-medium">{t('exactSendAmount')}</p>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 bg-black/40 border border-cyan-400/40 rounded-xl px-4 py-3">
-                      <span className="text-xl font-black text-cyan-300 font-mono">{snapshotSolAmount} SOL</span>
-                      <span className="text-white/40 text-sm ml-2">≈ {successTotalWithFee.toFixed(2)}€</span>
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-white/50 text-xs mb-1.5 font-medium">{t('exactSendAmount')}</p>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 bg-black/40 border border-cyan-400/40 rounded-xl px-4 py-3">
+                          <span className="text-xl font-black text-cyan-300 font-mono">{snapshotSolAmount} SOL</span>
+                          <span className="text-white/40 text-sm ml-2">≈ {successTotalWithFee.toFixed(2)}€</span>
+                        </div>
+                        <button
+                          onClick={() => copyToClipboard(snapshotSolAmount, 'sol')}
+                          className={`flex flex-col items-center gap-1 px-3 py-3 rounded-xl transition-all font-semibold text-xs shrink-0 min-w-[64px] ${copySuccess === 'sol' ? 'bg-green-500 text-white' : 'bg-cyan-600 hover:bg-cyan-500 text-white'}`}
+                        >
+                          {copySuccess === 'sol' ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                          {copySuccess === 'sol' ? t('pendingCopied') : t('pendingCopy')}
+                        </button>
+                      </div>
                     </div>
-                    <button
-                      onClick={() => copyToClipboard(snapshotSolAmount, 'sol')}
-                      className={`flex flex-col items-center gap-1 px-3 py-3 rounded-xl transition-all font-semibold text-xs shrink-0 min-w-[64px] ${copySuccess === 'sol' ? 'bg-green-500 text-white' : 'bg-cyan-600 hover:bg-cyan-500 text-white'}`}
-                    >
-                      {copySuccess === 'sol' ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
-                      {copySuccess === 'sol' ? t('pendingCopied') : t('pendingCopy')}
-                    </button>
+
+                    <div>
+                      <p className="text-white/50 text-xs mb-1.5 font-medium">{t('sendToAddress')}</p>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 bg-black/40 border border-white/20 rounded-xl px-3 py-3 min-w-0">
+                          <p className="text-xs font-mono text-white/80 break-all leading-relaxed">{SOLANA_ADDRESS}</p>
+                        </div>
+                        <button
+                          onClick={() => copyToClipboard(SOLANA_ADDRESS, 'address')}
+                          className={`flex flex-col items-center gap-1 px-3 py-3 rounded-xl transition-all font-semibold text-xs shrink-0 min-w-[64px] ${copySuccess === 'address' ? 'bg-green-500 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white'}`}
+                        >
+                          {copySuccess === 'address' ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                          {copySuccess === 'address' ? t('pendingCopied') : t('pendingCopy')}
+                        </button>
+                      </div>
+                    </div>
+
+                    {snapshotPaymentMethod === 'swaps' && (
+                      <a
+                        href={`https://www.swaps.app/?side=buy&amount=${snapshotSolAmount}&to=SOL%3Asolana&country=LT&toAddress=${SOLANA_ADDRESS}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-3 w-full bg-cyan-500 hover:bg-cyan-400 text-white font-bold py-4 px-6 rounded-xl transition-colors text-base mt-1"
+                      >
+                        <svg viewBox="0 0 128 128" className="w-5 h-5 shrink-0" fill="none">
+                          <rect width="128" height="128" rx="26" fill="white" fillOpacity="0.2"/>
+                          <path d="M32 80C32 80 40 56 64 56C88 56 96 32 96 32" stroke="white" strokeWidth="10" strokeLinecap="round"/>
+                          <path d="M32 48C32 48 40 72 64 72C88 72 96 96 96 96" stroke="white" strokeWidth="10" strokeLinecap="round" strokeOpacity="0.6"/>
+                        </svg>
+                        {t('successBuySwaps').replace('{amount}', snapshotSolAmount)}
+                      </a>
+                    )}
+
+                    {snapshotPaymentMethod === 'paybis' && (
+                      <a
+                        href={`https://paybis.com/buy-solana/?fromCurrencyCode=EUR&toCurrencyCode=SOL&toAmount=${snapshotSolAmount}&toAddress=${SOLANA_ADDRESS}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-3 w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-6 rounded-xl transition-colors text-base mt-1"
+                      >
+                        <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" fill="currentColor">
+                          <path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/>
+                        </svg>
+                        Mokėti per Paybis — {snapshotSolAmount} SOL
+                      </a>
+                    )}
                   </div>
                 </div>
 
-                <div>
-                  <p className="text-white/50 text-xs mb-1.5 font-medium">{t('sendToAddress')}</p>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 bg-black/40 border border-white/20 rounded-xl px-3 py-3 min-w-0">
-                      <p className="text-xs font-mono text-white/80 break-all leading-relaxed">{SOLANA_ADDRESS}</p>
-                    </div>
-                    <button
-                      onClick={() => copyToClipboard(SOLANA_ADDRESS, 'address')}
-                      className={`flex flex-col items-center gap-1 px-3 py-3 rounded-xl transition-all font-semibold text-xs shrink-0 min-w-[64px] ${copySuccess === 'address' ? 'bg-green-500 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white'}`}
-                    >
-                      {copySuccess === 'address' ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
-                      {copySuccess === 'address' ? t('pendingCopied') : t('pendingCopy')}
-                    </button>
-                  </div>
+                <div className="bg-yellow-500/20 border border-yellow-400/30 rounded-xl p-5 mb-6">
+                  <p className="text-yellow-100 text-base font-semibold mb-2">{t('successImportant')}</p>
+                  <ul className="text-yellow-100 text-base space-y-2 text-left">
+                    {snapshotPaymentMethod === 'swaps' ? (
+                      <>
+                        <li>• {t('successBullet1Swaps').replace('{amount}', snapshotSolAmount)}</li>
+                        <li>• {t('successBullet2Swaps')}</li>
+                        <li>• {t('successBullet3')}</li>
+                      </>
+                    ) : (
+                      <>
+                        <li>• {t('successBullet1').replace('{amount}', snapshotSolAmount)}</li>
+                        <li>• {t('successBullet2')}</li>
+                        <li>• {t('successBullet3')}</li>
+                      </>
+                    )}
+                  </ul>
                 </div>
-
-                {snapshotPaymentMethod === 'swaps' && (
-                  <a
-                    href={`https://www.swaps.app/?side=buy&amount=${snapshotSolAmount}&fiat=EUR&to=SOL%3Asolana&country=LT&method=apple_pay&toAddress=${SOLANA_ADDRESS}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-3 w-full bg-cyan-500 hover:bg-cyan-400 text-white font-bold py-4 px-6 rounded-xl transition-colors text-base mt-1"
-                  >
-                    <svg viewBox="0 0 128 128" className="w-5 h-5 shrink-0" fill="none">
-                      <rect width="128" height="128" rx="26" fill="white" fillOpacity="0.2"/>
-                      <path d="M32 80C32 80 40 56 64 56C88 56 96 32 96 32" stroke="white" strokeWidth="10" strokeLinecap="round"/>
-                      <path d="M32 48C32 48 40 72 64 72C88 72 96 96 96 96" stroke="white" strokeWidth="10" strokeLinecap="round" strokeOpacity="0.6"/>
-                    </svg>
-                    {t('successBuySwaps').replace('{amount}', snapshotSolAmount)}
-                  </a>
-                )}
-
-                {snapshotPaymentMethod === 'paybis' && (
-                  <a
-                    href={`https://paybis.com/buy-solana/?fromCurrencyCode=EUR&fromAmount=${successTotalWithFee.toFixed(2)}&toCurrencyCode=SOL&toAddress=${SOLANA_ADDRESS}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-3 w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-6 rounded-xl transition-colors text-base mt-1"
-                  >
-                    <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" fill="currentColor">
-                      <path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/>
-                    </svg>
-                    Mokėti kortele per Paybis — {successTotalWithFee.toFixed(2)}€
-                  </a>
-                )}
-              </div>
-            </div>
-
-            <div className="bg-yellow-500/20 border border-yellow-400/30 rounded-xl p-5 mb-6">
-              <p className="text-yellow-100 text-base font-semibold mb-2">{t('successImportant')}</p>
-              <ul className="text-yellow-100 text-base space-y-2 text-left">
-                {snapshotPaymentMethod === 'swaps' ? (
-                  <>
-                    <li>• {t('successBullet1Swaps').replace('{amount}', snapshotSolAmount)}</li>
-                    <li>• {t('successBullet2Swaps')}</li>
-                    <li>• {t('successBullet3')}</li>
-                  </>
-                ) : (
-                  <>
-                    <li>• {t('successBullet1').replace('{amount}', snapshotSolAmount)}</li>
-                    <li>• {t('successBullet2')}</li>
-                    <li>• {t('successBullet3')}</li>
-                  </>
-                )}
-              </ul>
-            </div>
+              </>
+            )}
 
             <div className="bg-white/10 rounded-lg p-5 mb-6 text-left">
               <h3 className="text-lg font-bold text-white mb-4">{t('successOrderInfo')}</h3>
@@ -824,10 +867,10 @@ export function Checkout({ onClose }: CheckoutProps) {
                       type="button"
                       onClick={handleApplyDiscount}
                       disabled={discountLoading || !discountCodeInput.trim()}
-                      className="flex items-center gap-2 px-4 py-3 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-white font-semibold rounded-lg transition-colors shrink-0"
+                      className="flex items-center gap-2 px-4 py-3 bg-green-600 hover:bg-green-500 disabled:opacity-50 text-white font-semibold rounded-lg transition-colors shrink-0"
                     >
                       {discountLoading ? <Loader className="w-4 h-4 animate-spin" /> : <Tag className="w-4 h-4" />}
-                      <span className="hidden sm:inline">{t('checkoutApply')}</span>
+                      <span>{t('checkoutApply')}</span>
                     </button>
                   </div>
                 )}
@@ -885,9 +928,16 @@ export function Checkout({ onClose }: CheckoutProps) {
                 </div>
               </div>
 
+              {(!solPrice || solPriceError) && (
+                <div className="bg-amber-500/10 border border-amber-400/40 rounded-xl p-3 text-amber-200 text-sm">
+                  {t('solPriceUnavailable') || 'SOL kursas kraunamas... Mygtukas bus aktyvus, kai gausime tikslią rinkos kainą.'}
+                </div>
+              )}
+
               <button
                 type="submit"
-                className="w-full bg-white text-[#0a1929] hover:bg-white/90 font-bold py-4 px-6 rounded-lg transition-colors"
+                disabled={!solPrice || solPrice <= 0}
+                className="w-full bg-white text-[#0a1929] hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed font-bold py-4 px-6 rounded-lg transition-colors"
               >
                 {t('checkoutContinue')}
               </button>
@@ -897,7 +947,7 @@ export function Checkout({ onClose }: CheckoutProps) {
               <div className="bg-white/10 border border-white/20 rounded-xl p-5">
                 <h3 className="font-bold text-white mb-3 text-lg">{t('orderAmount')}</h3>
                 <div className="space-y-2 text-base">
-                  {cart.map(item => {
+                  {displayCart.map(item => {
                     const tier = item.product.price_tiers?.find(t => t.quantity === item.quantity);
                     const lineTotal = tier ? tier.price : item.product.price * item.quantity;
                     return (
@@ -908,10 +958,10 @@ export function Checkout({ onClose }: CheckoutProps) {
                     );
                   })}
                   <div className="border-t border-white/20 pt-2 mt-2 space-y-1">
-                    {appliedDiscount && (
+                    {displayAppliedDiscount && (
                       <div className="flex justify-between text-green-400">
                         <span>
-                          {t('checkoutDiscountLine').replace('{code}', appliedDiscount.code).replace('{percent}', String(appliedDiscount.percent))}
+                          {t('checkoutDiscountLine').replace('{code}', displayAppliedDiscount.code).replace('{percent}', String(displayAppliedDiscount.percent))}
                         </span>
                         <span>-{discountAmount.toFixed(2)}€</span>
                       </div>
@@ -976,7 +1026,7 @@ export function Checkout({ onClose }: CheckoutProps) {
                         <circle cx="94" cy="71" r="7" fill="#F59E0B" fillOpacity="0.9"/>
                       </svg>
                     }
-                    guide={<PaybisGuide totalEurWithFee={totalEurWithFee} />}
+                    guide={<PaybisGuide solAmount={solAmount} totalEurWithFee={totalEurWithFee} />}
                   />
 
                   <PaymentOption
@@ -1126,7 +1176,7 @@ export function Checkout({ onClose }: CheckoutProps) {
               </button>
 
               <button
-                onClick={() => { setLockedSolPrice(null); setStep('info'); }}
+                onClick={() => { setLockedSolPrice(null); setLocked(null); setUniqueSolOffset(0); setStep('info'); }}
                 className="w-full bg-white/10 text-white hover:bg-white/20 font-medium py-3 px-6 rounded-lg transition-colors"
               >
                 {t('checkoutBack')}
@@ -1154,7 +1204,7 @@ interface PaymentOptionProps {
   guide: React.ReactNode;
 }
 
-function PaymentOption({ id, selected, onSelect, expanded, onToggleGuide, label, badge, badgeColor, badgeTextColor = 'text-white', howLabel, icon, guide }: PaymentOptionProps) {
+function PaymentOption({ selected, onSelect, expanded, onToggleGuide, label, badge, badgeColor, badgeTextColor = 'text-white', howLabel, icon, guide }: PaymentOptionProps) {
   return (
     <div className={`rounded-xl border-2 transition-all ${selected ? 'border-blue-400 bg-blue-500/10' : 'border-white/20 bg-white/5'}`}>
       <div className="flex items-center gap-4 p-4">
@@ -1194,7 +1244,7 @@ function PaymentOption({ id, selected, onSelect, expanded, onToggleGuide, label,
 
 function SwapsGuide({ solAmount, totalEurWithFee }: { solAmount: string; totalEurWithFee: number }) {
   const { t } = useLanguage();
-  const swapsUrl = `https://www.swaps.app/?side=buy&amount=${solAmount}&fiat=EUR&to=SOL%3Asolana&country=LT&method=apple_pay&toAddress=${SOLANA_ADDRESS}`;
+  const swapsUrl = `https://www.swaps.app/?side=buy&amount=${solAmount}&to=SOL%3Asolana&country=LT&toAddress=${SOLANA_ADDRESS}`;
   return (
     <div className="space-y-4">
       <div className="bg-gradient-to-r from-cyan-600/20 to-blue-600/20 border border-cyan-400/30 rounded-xl p-4">
@@ -1394,8 +1444,8 @@ function RevolutGuide({ solAmount, totalEurWithFee }: { solAmount: string; total
   );
 }
 
-function PaybisGuide({ totalEurWithFee }: { totalEurWithFee: number }) {
-  const paybisUrl = `https://paybis.com/buy-solana/?fromCurrencyCode=EUR&fromAmount=${totalEurWithFee.toFixed(2)}&toCurrencyCode=SOL&toAddress=${SOLANA_ADDRESS}`;
+function PaybisGuide({ solAmount, totalEurWithFee }: { solAmount: string; totalEurWithFee: number }) {
+  const paybisUrl = `https://paybis.com/buy-solana/?fromCurrencyCode=EUR&toCurrencyCode=SOL&toAmount=${solAmount}&toAddress=${SOLANA_ADDRESS}`;
   return (
     <div className="space-y-4">
       <div className="bg-gradient-to-r from-blue-600/20 to-cyan-600/20 border border-blue-400/30 rounded-xl p-4">
@@ -1405,7 +1455,7 @@ function PaybisGuide({ totalEurWithFee }: { totalEurWithFee: number }) {
       <GuideStep number={1} title="Atidarykite Paybis">
         <div className="bg-white/10 rounded-lg p-3 space-y-2">
           <p className="text-white/80 text-base">• Spauskite mygtuką apačioje — suma jau užpildyta automatiškai</p>
-          <p className="text-white/80 text-base">• Bus rodoma: <span className="text-yellow-300 font-bold">{totalEurWithFee.toFixed(2)}€</span></p>
+          <p className="text-white/80 text-base">• Bus rodoma: <span className="text-yellow-300 font-bold">{solAmount} SOL</span> ({totalEurWithFee.toFixed(2)}€)</p>
           <p className="text-white/80 text-base">• Gavėjo adresas užpildytas automatiškai</p>
         </div>
       </GuideStep>
@@ -1413,7 +1463,7 @@ function PaybisGuide({ totalEurWithFee }: { totalEurWithFee: number }) {
         <div className="bg-white/10 rounded-lg p-3 space-y-2">
           <p className="text-white/80 text-base">• Įveskite savo kortelės duomenis</p>
           <p className="text-white/80 text-base">• Gali reikėti patvirtinti el. paštu arba SMS</p>
-          <p className="text-white/80 text-base">• Visa suma: <span className="text-yellow-300 font-bold">{totalEurWithFee.toFixed(2)}€</span></p>
+          <p className="text-white/80 text-base">• Tiksliai: <span className="text-yellow-300 font-bold">{solAmount} SOL</span> ({totalEurWithFee.toFixed(2)}€)</p>
         </div>
         <div className="bg-green-500/20 border border-green-400/30 rounded-lg p-3 mt-2">
           <p className="text-green-300 text-sm font-semibold">SOL bus automatiškai nusiųstas tiesiai mums.</p>
@@ -1435,7 +1485,7 @@ function PaybisGuide({ totalEurWithFee }: { totalEurWithFee: number }) {
         <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" fill="currentColor">
           <path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/>
         </svg>
-        Mokėti {totalEurWithFee.toFixed(2)}€ kortele per Paybis
+        Mokėti {solAmount} SOL kortele per Paybis
       </a>
     </div>
   );

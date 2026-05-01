@@ -1,9 +1,45 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const FALLBACK_SUPABASE_URL = 'https://jgncnbmevixfvrcnistv.supabase.co';
+const FALLBACK_SUPABASE_ANON_KEY =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpnbmNuYm1ldml4ZnZyY25pc3R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEwNjg1NjAsImV4cCI6MjA3NjY0NDU2MH0.3kD-DhTVdB8uStOqDk7-ArDfWMr3RzRW7X70CdgK3VM';
+
+const envUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+const envKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+
+const isCorrectProjectUrl = (url: string | undefined): url is string =>
+  !!url && url.includes('jgncnbmevixfvrcnistv.supabase.co');
+
+const supabaseUrl = isCorrectProjectUrl(envUrl) ? envUrl : FALLBACK_SUPABASE_URL;
+const supabaseAnonKey = isCorrectProjectUrl(envUrl) && envKey ? envKey : FALLBACK_SUPABASE_ANON_KEY;
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+const FORCE_OUT_OF_STOCK_NAMES = new Set([
+  'MOTS-C 40MG',
+  'TESAMORELIN 10MG',
+  'GLOW 70MG',
+  'KLOW 80MG',
+  'HGH 15IU',
+  'HGH 24IU',
+  'MASTERONE E 2000MG',
+]);
+
+const FORCE_OUT_OF_STOCK_SLUGS = new Set([
+  'mots-c-40mg',
+  'tesamorelin-10mg',
+  'glow-70mg',
+  'klow-80mg',
+  'hgh-15iu',
+  'hgh-24iu',
+  'masterone-e-2000mg',
+]);
+
+export const isForcedOutOfStock = (product: { name?: string | null; slug?: string | null }): boolean => {
+  const name = (product.name ?? '').trim().toUpperCase();
+  const slug = (product.slug ?? '').trim().toLowerCase();
+  return FORCE_OUT_OF_STOCK_NAMES.has(name) || FORCE_OUT_OF_STOCK_SLUGS.has(slug);
+};
 
 export interface PriceTier {
   id: string;

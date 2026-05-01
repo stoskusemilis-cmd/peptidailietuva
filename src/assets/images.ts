@@ -14,4 +14,11 @@ export const images: Record<string, string> = {
   'semax10': semax10,
 };
 
+export const productImagesBySlug: Record<string, string> = {};
+
+export function resolveProductImage(slug: string | null | undefined, imageUrl: string | null | undefined): string | null {
+  if (slug && productImagesBySlug[slug]) return productImagesBySlug[slug];
+  return imageUrl || null;
+}
+
 export const logoImage = logo;

@@ -1,4 +1,14 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+
+const LANG_STORAGE_KEY = 'pl_lang';
+
+function loadLang(): Language {
+  try {
+    const stored = localStorage.getItem(LANG_STORAGE_KEY) as Language | null;
+    if (stored && ['lt', 'en', 'ru'].includes(stored)) return stored;
+  } catch {}
+  return 'lt';
+}
 
 export type Language = 'lt' | 'en' | 'ru';
 
@@ -13,7 +23,7 @@ const translations: Record<Language, Record<string, string>> = {
     // Header
     cart: 'Krepšelis',
     // Hero
-    heroSubtitle: 'Aukščiausios kokybės Peptidai. Patikimi pardavėjai Lietuvoje jau daugiau nei pusmetį.',
+    heroSubtitle: 'Aukščiausios kokybės Peptidai. Pirmieji tiekėjai Lietuvoje nuo 2025m.',
     heroStat1: 'Šimtai patenkintų klientų',
     heroStat2: 'Greitas pristatymas visoje LT',
     heroStat3: '100% anonimiškas pirkimas',
@@ -21,11 +31,11 @@ const translations: Record<Language, Record<string, string>> = {
     loading: 'Kraunami produktai...',
     // About
     aboutTitle: 'Apie mus',
-    aboutSubtitle: 'Patikimiausia Peptidų ir Steroidų parduotuvė Lietuvoje',
-    aboutText1: 'Daugiau nei 6 mėnesius teikiame aukščiausios kokybės peptidus Lietuvos klientams.',
+    aboutSubtitle: 'Patikimiausia Peptidų ir preparatų parduotuvė Lietuvoje',
+    aboutText1: 'Nuo 2025 metų teikiame aukščiausios kokybės peptidus Lietuvos klientams.',
     aboutText2: 'Per šį laiką užsitarnavome šimtų klientų pasitikėjimą. Kiekvienas produktas tikrinamas ir siunčiamas rūpestingai, užtikrinant greitą ir saugų pristatymą.',
     aboutSlogan: 'Peptidai — ateities medicina.',
-    stat1Title: '6+ mėnesiai rinkoje',
+    stat1Title: 'Dirbame nuo 2025m.',
     stat1Desc: 'Patirtis ir klientų pasitikėjimas',
     stat2Title: 'Siuntimas 2-3 d.',
     stat2Desc: 'Visoje Lietuvoje į paštomatus',
@@ -278,6 +288,8 @@ const translations: Record<Language, Record<string, string>> = {
     // ProductCard
     details: 'Detaliau',
     addToCart: 'Į krepšelį',
+    restockSoon: 'Netrukus turėsime',
+    outOfStock: 'Nėra sandėlyje',
     // ProductDetail
     description: 'Aprašymas',
     selectQty: 'Pasirinkite kiekį',
@@ -308,11 +320,11 @@ const translations: Record<Language, Record<string, string>> = {
     loading: 'Loading products...',
     // About
     aboutTitle: 'About us',
-    aboutSubtitle: 'The most trusted Peptides & Steroids store in Lithuania',
-    aboutText1: 'For over 6 months we have been providing the highest quality peptides to Lithuanian customers.',
+    aboutSubtitle: 'The most trusted Peptides & preparations store in Lithuania',
+    aboutText1: 'Since 2025 we have been providing the highest quality peptides to Lithuanian customers.',
     aboutText2: 'In this time we have earned the trust of hundreds of customers. Each product is carefully checked and shipped, ensuring discreet and fast delivery.',
     aboutSlogan: 'Peptides — the medicine of the future.',
-    stat1Title: '6+ months on the market',
+    stat1Title: 'Working since 2025',
     stat1Desc: 'Experience and customer trust',
     stat2Title: 'Shipping 2-3 days',
     stat2Desc: 'Across Lithuania to parcel lockers',
@@ -565,6 +577,8 @@ const translations: Record<Language, Record<string, string>> = {
     // ProductCard
     details: 'Details',
     addToCart: 'Add to cart',
+    restockSoon: 'Restock soon',
+    outOfStock: 'Out of stock',
     // ProductDetail
     description: 'Description',
     selectQty: 'Select quantity',
@@ -595,11 +609,11 @@ const translations: Record<Language, Record<string, string>> = {
     loading: 'Загрузка товаров...',
     // About
     aboutTitle: 'О нас',
-    aboutSubtitle: 'Самый надёжный магазин пептидов и стероидов в Литве',
-    aboutText1: 'Более 6 месяцев мы предоставляем пептиды высочайшего качества клиентам Литвы.',
+    aboutSubtitle: 'Самый надёжный магазин пептидов и препаратов в Литве',
+    aboutText1: 'С 2025 года мы предоставляем пептиды высочайшего качества клиентам Литвы.',
     aboutText2: 'За это время мы завоевали доверие сотен клиентов. Каждый товар тщательно проверяется и упаковывается, обеспечивая дискретную и быструю доставку.',
     aboutSlogan: 'Пептиды — медицина будущего.',
-    stat1Title: '6+ месяцев на рынке',
+    stat1Title: 'Работаем с 2025г.',
     stat1Desc: 'Опыт и доверие клиентов',
     stat2Title: 'Доставка 2-3 дня',
     stat2Desc: 'По всей Литве в постоматы',
@@ -852,6 +866,8 @@ const translations: Record<Language, Record<string, string>> = {
     // ProductCard
     details: 'Подробнее',
     addToCart: 'В корзину',
+    restockSoon: 'Скоро в наличии',
+    outOfStock: 'Нет в наличии',
     // ProductDetail
     description: 'Описание',
     selectQty: 'Выберите количество',
@@ -875,7 +891,12 @@ const translations: Record<Language, Record<string, string>> = {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [lang, setLang] = useState<Language>('lt');
+  const [lang, setLangState] = useState<Language>(loadLang);
+
+  const setLang = useCallback((l: Language) => {
+    try { localStorage.setItem(LANG_STORAGE_KEY, l); } catch {}
+    setLangState(l);
+  }, []);
 
   const t = (key: string): string => {
     return translations[lang][key] ?? translations['lt'][key] ?? key;

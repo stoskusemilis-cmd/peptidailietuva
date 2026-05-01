@@ -8,8 +8,8 @@ import { Checkout } from './components/Checkout';
 import { Toast } from './components/Toast';
 import { useCart } from './contexts/CartContext';
 import { useLanguage } from './contexts/LanguageContext';
-import { supabase, Product } from './lib/supabase';
-import { Loader, Mail, Send, Facebook, Instagram, Clock, CheckCircle, Lock, Zap, Truck, Shield, ChevronDown, ChevronUp, Copy, Check } from 'lucide-react';
+import { supabase, Product, isForcedOutOfStock } from './lib/supabase';
+import { Loader, Send, Facebook, Instagram, Clock, CheckCircle, Lock, Zap, Truck, Shield, ChevronDown, ChevronUp, Copy, Check } from 'lucide-react';
 
 const SOLANA_ADDRESS = 'A8CDFpdaLuzfZWDX2xbCXf8nXSJpz3K5urqTPGL126ai';
 
@@ -48,6 +48,7 @@ function App() {
 
       const productsWithTiers = (productsResult.data ?? []).map(product => ({
         ...product,
+        stock: isForcedOutOfStock(product) ? 0 : product.stock,
         price_tiers: tiersByProduct.get(product.id) ?? [],
       }));
 
@@ -466,15 +467,7 @@ function App() {
             <div className="text-center mb-6 sm:mb-10">
               <h3 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent mb-4 sm:mb-6">{t('footerContact')}</h3>
 
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-6 sm:mb-8">
-                <a
-                  href="mailto:peptidailietuva@gmail.com"
-                  className="flex items-center gap-3 bg-gradient-to-r from-cyan-500/15 to-blue-500/15 hover:from-cyan-500/25 hover:to-blue-500/25 px-5 py-3 rounded-xl transition-all duration-300 border border-cyan-500/25 hover:border-cyan-500/50 w-full sm:w-auto justify-center group"
-                >
-                  <Mail className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-400 group-hover:text-cyan-300 transition-colors flex-shrink-0" />
-                  <span className="text-white/80 font-medium text-sm group-hover:text-white transition-colors">peptidailietuva@gmail.com</span>
-                </a>
-
+              <div className="flex items-center justify-center mb-6 sm:mb-8">
                 <a
                   href="https://t.me/Peptidai"
                   target="_blank"
