@@ -1,7 +1,17 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const FALLBACK_SUPABASE_URL = 'https://jgncnbmevixfvrcnistv.supabase.co';
+const FALLBACK_SUPABASE_ANON_KEY =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpnbmNuYm1ldml4ZnZyY25pc3R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEwNjg1NjAsImV4cCI6MjA3NjY0NDU2MH0.3kD-DhTVdB8uStOqDk7-ArDfWMr3RzRW7X70CdgK3VM';
+
+const envUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+const envKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+
+const isCorrectProjectUrl = (url: string | undefined): url is string =>
+  !!url && url.includes('jgncnbmevixfvrcnistv.supabase.co');
+
+const supabaseUrl = isCorrectProjectUrl(envUrl) ? envUrl : FALLBACK_SUPABASE_URL;
+const supabaseAnonKey = isCorrectProjectUrl(envUrl) && envKey ? envKey : FALLBACK_SUPABASE_ANON_KEY;
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
