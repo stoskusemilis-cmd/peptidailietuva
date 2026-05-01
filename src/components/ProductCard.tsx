@@ -35,12 +35,12 @@ export function ProductCard({ product, onAddToCart, onViewDetails, onQuickAdd }:
           <img
             src={imageSrc}
             alt={product.name}
-            className="w-full h-full object-contain relative z-10 group-hover:scale-105 transition-transform duration-500"
+            className={`w-full h-full object-contain relative z-10 group-hover:scale-105 transition-transform duration-500 ${outOfStock ? 'grayscale opacity-50' : ''}`}
             loading="lazy"
             decoding="async"
           />
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center">
+          <div className={`absolute inset-0 flex items-center justify-center ${outOfStock ? 'grayscale opacity-50' : ''}`}>
             <div className="text-center relative z-10">
               <div className="text-5xl sm:text-6xl md:text-7xl font-bold text-white mb-2 text-glow">
                 {product.name.match(/\d+/)?.[0] || ''}

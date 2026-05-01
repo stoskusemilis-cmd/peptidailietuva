@@ -70,10 +70,10 @@ export function ProductDetail({ product, onClose, onAddToCart }: ProductDetailPr
               <img
                 src={imageSrc}
                 alt={product.name}
-                className="w-full h-full object-contain"
+                className={`w-full h-full object-contain ${outOfStock ? 'grayscale opacity-50' : ''}`}
               />
             ) : (
-              <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 flex items-center justify-center">
+              <div className={`absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 flex items-center justify-center ${outOfStock ? 'grayscale opacity-50' : ''}`}>
                 <div className="text-center">
                   <div className="text-6xl sm:text-8xl font-bold text-white mb-3">
                     {product.name.match(/\d+/)?.[0] || ''}
