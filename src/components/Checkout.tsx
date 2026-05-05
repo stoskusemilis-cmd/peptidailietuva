@@ -1277,7 +1277,7 @@ interface PaymentOptionProps {
   guide: React.ReactNode;
 }
 
-function PaymentOption({ id, selected, onSelect, expanded, onToggleGuide, label, badge, badgeColor, badgeTextColor = 'text-white', howLabel, icon, guide }: PaymentOptionProps) {
+function PaymentOption({ selected, onSelect, expanded, onToggleGuide, label, badge, badgeColor, badgeTextColor = 'text-white', howLabel, icon, guide }: PaymentOptionProps) {
   return (
     <div className={`rounded-xl border-2 transition-all ${selected ? 'border-blue-400 bg-blue-500/10' : 'border-white/20 bg-white/5'}`}>
       <div className="flex items-center gap-4 p-4">
@@ -1317,7 +1317,7 @@ function PaymentOption({ id, selected, onSelect, expanded, onToggleGuide, label,
 
 function SwapsGuide({ solAmount, totalEurWithFee }: { solAmount: string; totalEurWithFee: number }) {
   const { t } = useLanguage();
-  const swapsUrl = `https://www.swaps.app/?side=buy&amount=${solAmount}&fiat=EUR&to=SOL%3Asolana&country=LT&method=apple_pay&toAddress=${depositAddress}`;
+  const swapsUrl = `https://www.swaps.app/?side=buy&amount=${solAmount}&fiat=EUR&to=SOL%3Asolana&country=LT&method=apple_pay`;
   return (
     <div className="space-y-4">
       <div className="bg-gradient-to-r from-cyan-600/20 to-blue-600/20 border border-cyan-400/30 rounded-xl p-4">
@@ -1518,7 +1518,7 @@ function RevolutGuide({ solAmount, totalEurWithFee }: { solAmount: string; total
 }
 
 function PaybisGuide({ totalEurWithFee }: { totalEurWithFee: number }) {
-  const paybisUrl = `https://paybis.com/buy-solana/?fromCurrencyCode=EUR&fromAmount=${totalEurWithFee.toFixed(2)}&toCurrencyCode=SOL&toAddress=${depositAddress}`;
+  const paybisUrl = `https://paybis.com/buy-solana/?fromCurrencyCode=EUR&fromAmount=${totalEurWithFee.toFixed(2)}&toCurrencyCode=SOL`;
   return (
     <div className="space-y-4">
       <div className="bg-gradient-to-r from-blue-600/20 to-cyan-600/20 border border-blue-400/30 rounded-xl p-4">
