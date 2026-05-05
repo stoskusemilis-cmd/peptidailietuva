@@ -526,9 +526,124 @@ export function Checkout({ onClose }: CheckoutProps) {
 
   if (step === 'success') {
     const successTotalWithFee = snapshotTotalEur - (snapshotDiscount?.amount || 0) + snapshotShippingFee;
+
+    if (paymentConfirmed) {
+      return (
+        <div className="fixed inset-0 bg-black bg-opacity-80 z-50 overflow-y-auto">
+          <div className="min-h-full flex items-start sm:items-center justify-center p-0 sm:p-4">
+            <div className="bg-[#0a1929] border border-white/20 sm:rounded-2xl rounded-none max-w-lg w-full min-h-screen sm:min-h-0 p-5 sm:p-8 sm:my-8">
+              <div className="text-center">
+                <div className="flex justify-center mb-4">
+                  <div className="bg-green-500/20 rounded-full p-3 sm:p-4">
+                    <CheckCircle className="w-12 h-12 sm:w-16 sm:h-16 text-green-400" />
+                  </div>
+                </div>
+                <h2 className="text-xl sm:text-2xl font-bold text-green-300 mb-1">{t('successConfirmed')}</h2>
+                <p className="text-white/60 text-sm mb-5">{t('successConfirmedMsg')}</p>
+
+                <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-5 text-left">
+                  <h3 className="text-base font-bold text-white mb-3 text-center">{t('successOrderInfo')}</h3>
+
+                  <div className="py-2 border-b border-white/10">
+                    <p className="text-white/50 text-xs mb-2 uppercase tracking-wide">{t('successPurchased')}</p>
+                    <div className="space-y-1">
+                      {snapshotCart.map(item => {
+                        const tier = item.product.price_tiers?.find(t => t.quantity === item.quantity);
+                        const lineTotal = tier ? tier.price : item.product.price * item.quantity;
+                        return (
+                          <div key={item.product.id} className="flex justify-between items-center gap-3 text-sm">
+                            <span className="text-white break-words min-w-0">{item.product.name} × {item.quantity}</span>
+                            <span className="font-semibold text-white shrink-0">{lineTotal.toFixed(2)}€</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="divide-y divide-white/10 text-sm">
+                    <div className="flex justify-between gap-3 py-2">
+                      <span className="text-white/60 shrink-0">{t('successOrderNum')}</span>
+                      <span className="font-semibold text-white text-right break-all">{orderNumber}</span>
+                    </div>
+                    <div className="flex justify-between gap-3 py-2">
+                      <span className="text-white/60 shrink-0">{t('successPhone')}</span>
+                      <span className="font-medium text-white text-right break-all">{formData.phone}</span>
+                    </div>
+                    <div className="flex justify-between gap-3 py-2">
+                      <span className="text-white/60 shrink-0">{t('successCity')}</span>
+                      <span className="font-medium text-white text-right break-words">{formData.city}</span>
+                    </div>
+                    <div className="flex justify-between gap-3 py-2">
+                      <span className="text-white/60 shrink-0">{t('successLocker')}</span>
+                      <span className="font-medium text-white text-right break-words">
+                        {snapshotSelectedLocker ? `${snapshotSelectedLocker.provider} - ${snapshotSelectedLocker.address}` : '—'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between gap-3 py-2">
+                      <span className="text-white/60 shrink-0">{t('successSubtotal')}</span>
+                      <span className="font-medium text-white">{snapshotTotalEur.toFixed(2)}€</span>
+                    </div>
+                    {snapshotDiscount && (
+                      <>
+                        <div className="flex justify-between gap-3 py-2">
+                          <span className="text-white/60 shrink-0">{t('successDiscountCode')}</span>
+                          <span className="font-medium text-white text-right break-all">{snapshotDiscount.code}</span>
+                        </div>
+                        <div className="flex justify-between gap-3 py-2">
+                          <span className="text-green-400 shrink-0">{t('successDiscount').replace('{percent}', String(snapshotDiscount.percent))}</span>
+                          <span className="font-medium text-green-400">-{snapshotDiscount.amount.toFixed(2)}€</span>
+                        </div>
+                      </>
+                    )}
+                    <div className="flex justify-between gap-3 py-2">
+                      <span className="text-white/60 shrink-0">{t('successShipping')}</span>
+                      <span className="font-medium text-white">
+                        {snapshotShippingFee > 0 ? `+${snapshotShippingFee.toFixed(2)}€` : t('cartFree')}
+                      </span>
+                    </div>
+                    <div className="flex justify-between gap-3 py-2.5">
+                      <span className="text-white/70 font-semibold shrink-0">{t('successPaymentAmount')}</span>
+                      <span className="font-bold text-cyan-300 font-mono text-right">{snapshotSolAmount} SOL</span>
+                    </div>
+                    <div className="flex justify-between gap-3 py-2.5">
+                      <span className="text-white font-bold shrink-0">{t('successTotalPaid')}</span>
+                      <span className="font-bold text-white text-lg">{successTotalWithFee.toFixed(2)}€</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-blue-500/15 border border-blue-400/30 rounded-xl p-4 mb-5">
+                  <p className="text-blue-100 text-sm mb-3">{t('successContact')}</p>
+                  <a
+                    href="https://t.me/Peptidai"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-2 w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-4 rounded-lg transition-colors text-sm"
+                  >
+                    <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
+                      <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248-1.97 9.289c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.48 13.86l-2.95-.924c-.642-.204-.654-.642.136-.953l11.57-4.461c.537-.194 1.006.131.826.726z"/>
+                    </svg>
+                    @Peptidai Telegram
+                  </a>
+                </div>
+
+                <button
+                  onClick={onClose}
+                  className="w-full bg-white text-[#0a1929] hover:bg-white/90 font-bold py-3.5 px-6 rounded-lg transition-colors text-sm"
+                >
+                  {t('successFinish')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4 overflow-y-auto">
-        <div className="bg-[#0a1929] border border-white/20 rounded-2xl max-w-2xl w-full p-4 sm:p-8 my-4 sm:my-8">
+      <div className="fixed inset-0 bg-black bg-opacity-70 z-50 overflow-y-auto">
+        <div className="min-h-full flex items-start sm:items-center justify-center p-0 sm:p-4">
+        <div className="bg-[#0a1929] border border-white/20 sm:rounded-2xl rounded-none max-w-2xl w-full min-h-screen sm:min-h-0 p-4 sm:p-8 sm:my-8">
           <div className="text-center">
             <div className="flex justify-center mb-6">
               <div className="bg-green-500/20 rounded-full p-4">
@@ -542,15 +657,7 @@ export function Checkout({ onClose }: CheckoutProps) {
               <p className="text-2xl font-bold text-white">{orderNumber}</p>
             </div>
 
-            {paymentConfirmed ? (
-              <div className="bg-green-500/20 border-2 border-green-400/50 rounded-xl p-6 mb-6">
-                <div className="flex items-center justify-center gap-3 mb-2">
-                  <CheckCircle className="w-8 h-8 text-green-400" />
-                  <p className="text-green-300 text-xl font-bold">{t('successConfirmed')}</p>
-                </div>
-                <p className="text-green-200/70 text-base">{t('successConfirmedMsg')}</p>
-              </div>
-            ) : (
+            {(
               <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-6 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   {paymentChecking ? (
@@ -733,6 +840,7 @@ export function Checkout({ onClose }: CheckoutProps) {
               {t('successFinish')}
             </button>
           </div>
+        </div>
         </div>
       </div>
     );
