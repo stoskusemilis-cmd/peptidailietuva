@@ -8,8 +8,6 @@ interface CheckoutProps {
   onClose: () => void;
 }
 
-const SOLANA_ADDRESS = 'A8CDFpdaLuzfZWDX2xbCXf8nXSJpz3K5urqTPGL126ai';
-
 type PaymentMethod = 'swaps' | 'paybis' | 'phantom' | 'trust' | 'revolut' | null;
 type Step = 'info' | 'payment' | 'pending' | 'success';
 
@@ -31,6 +29,7 @@ export function Checkout({ onClose }: CheckoutProps) {
   const [snapshotSelectedLocker, setSnapshotSelectedLocker] = useState<import('../lib/supabase').ParcelLocker | undefined>(undefined);
   const [snapshotPaymentMethod, setSnapshotPaymentMethod] = useState<PaymentMethod>(null);
   const [orderId, setOrderId] = useState('');
+  const [depositAddress, setDepositAddress] = useState('');
   const [paymentConfirmed, setPaymentConfirmed] = useState(false);
   const [paymentChecking, setPaymentChecking] = useState(false);
   const [nextCheckIn, setNextCheckIn] = useState(60);
@@ -289,7 +288,6 @@ export function Checkout({ onClose }: CheckoutProps) {
           commission_percent: appliedDiscount?.commission || null,
         },
         payment_method: selectedPayment,
-        wallet_address: SOLANA_ADDRESS,
         crypto_type: 'SOL',
       };
 
@@ -313,7 +311,6 @@ export function Checkout({ onClose }: CheckoutProps) {
           full_order_details: fullOrderDetails,
           shipping_address: {
             crypto_type: 'SOL',
-            wallet_address: SOLANA_ADDRESS,
             payment_method: selectedPayment,
             shipping_fee_eur: shippingFee,
             original_total_eur: totalEur,
@@ -325,13 +322,31 @@ export function Checkout({ onClose }: CheckoutProps) {
       if (error) throw error;
       if (!order) throw new Error('Failed to create order');
 
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+      const walletRes = await fetch(`${supabaseUrl}/functions/v1/create-order-wallet`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseKey}`,
+        },
+        body: JSON.stringify({ order_id: order.id }),
+      });
+      if (!walletRes.ok) {
+        const errText = await walletRes.text();
+        throw new Error(`Nepavyko sugeneruoti mokėjimo adreso: ${errText}`);
+      }
+      const walletData = await walletRes.json();
+      const orderDepositAddress: string = walletData.deposit_address;
+      if (!orderDepositAddress) throw new Error('Nepavyko sugeneruoti mokėjimo adreso');
+      setDepositAddress(orderDepositAddress);
+
       if (appliedDiscount) {
         try { await supabase.rpc('increment_discount_usage', { p_code: appliedDiscount.code }); } catch {}
       }
 
       try {
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-        const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
         const emailRes = await fetch(`${supabaseUrl}/functions/v1/send-order-email`, {
           method: 'POST',
           headers: {
@@ -359,12 +374,12 @@ export function Checkout({ onClose }: CheckoutProps) {
       clearCart();
 
       if (selectedPayment === 'swaps') {
-        const swapsUrl = `https://www.swaps.app/?side=buy&amount=${solAmount}&fiat=EUR&to=SOL%3Asolana&country=LT&method=apple_pay&toAddress=${SOLANA_ADDRESS}`;
+        const swapsUrl = `https://www.swaps.app/?side=buy&amount=${solAmount}&fiat=EUR&to=SOL%3Asolana&country=LT&method=apple_pay&toAddress=${orderDepositAddress}`;
         window.open(swapsUrl, '_blank');
       }
 
       if (selectedPayment === 'paybis') {
-        const paybisUrl = `https://paybis.com/buy-solana/?fromCurrencyCode=EUR&fromAmount=${totalEurWithFee.toFixed(2)}&toCurrencyCode=SOL&toAddress=${SOLANA_ADDRESS}`;
+        const paybisUrl = `https://paybis.com/buy-solana/?fromCurrencyCode=EUR&fromAmount=${totalEurWithFee.toFixed(2)}&toCurrencyCode=SOL&toAddress=${orderDepositAddress}`;
         window.open(paybisUrl, '_blank');
       }
 
@@ -435,10 +450,10 @@ export function Checkout({ onClose }: CheckoutProps) {
                 <p className="text-white/50 text-xs mb-1">{t('pendingAddress')}</p>
                 <div className="flex items-center gap-2">
                   <div className="flex-1 bg-black/40 border border-white/20 rounded-xl px-3 py-3 min-w-0">
-                    <p className="text-xs font-mono text-white/80 break-all leading-relaxed">{SOLANA_ADDRESS}</p>
+                    <p className="text-xs font-mono text-white/80 break-all leading-relaxed">{depositAddress}</p>
                   </div>
                   <button
-                    onClick={() => copyToClipboard(SOLANA_ADDRESS, 'address')}
+                    onClick={() => copyToClipboard(depositAddress, 'address')}
                     className={`flex flex-col items-center gap-1 px-3 py-3 rounded-xl transition-all font-semibold text-xs shrink-0 min-w-[64px] ${copySuccess === 'address' ? 'bg-green-500 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white'}`}
                   >
                     {copySuccess === 'address' ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
@@ -454,7 +469,7 @@ export function Checkout({ onClose }: CheckoutProps) {
 
             {snapshotPaymentMethod === 'swaps' && (
               <a
-                href={`https://www.swaps.app/?side=buy&amount=${snapshotSolAmount}&fiat=EUR&to=SOL%3Asolana&country=LT&method=apple_pay&toAddress=${SOLANA_ADDRESS}`}
+                href={`https://www.swaps.app/?side=buy&amount=${snapshotSolAmount}&fiat=EUR&to=SOL%3Asolana&country=LT&method=apple_pay&toAddress=${depositAddress}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2 w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-3 px-5 rounded-xl mb-4 transition-colors text-sm"
@@ -470,7 +485,7 @@ export function Checkout({ onClose }: CheckoutProps) {
 
             {snapshotPaymentMethod === 'paybis' && (
               <a
-                href={`https://paybis.com/buy-solana/?fromCurrencyCode=EUR&fromAmount=${(snapshotTotalEur - (snapshotDiscount?.amount || 0) + snapshotShippingFee).toFixed(2)}&toCurrencyCode=SOL&toAddress=${SOLANA_ADDRESS}`}
+                href={`https://paybis.com/buy-solana/?fromCurrencyCode=EUR&fromAmount=${(snapshotTotalEur - (snapshotDiscount?.amount || 0) + snapshotShippingFee).toFixed(2)}&toCurrencyCode=SOL&toAddress=${depositAddress}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2 w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-5 rounded-xl mb-4 transition-colors text-sm"
@@ -597,10 +612,10 @@ export function Checkout({ onClose }: CheckoutProps) {
                   <p className="text-white/50 text-xs mb-1.5 font-medium">{t('sendToAddress')}</p>
                   <div className="flex items-center gap-2">
                     <div className="flex-1 bg-black/40 border border-white/20 rounded-xl px-3 py-3 min-w-0">
-                      <p className="text-xs font-mono text-white/80 break-all leading-relaxed">{SOLANA_ADDRESS}</p>
+                      <p className="text-xs font-mono text-white/80 break-all leading-relaxed">{depositAddress}</p>
                     </div>
                     <button
-                      onClick={() => copyToClipboard(SOLANA_ADDRESS, 'address')}
+                      onClick={() => copyToClipboard(depositAddress, 'address')}
                       className={`flex flex-col items-center gap-1 px-3 py-3 rounded-xl transition-all font-semibold text-xs shrink-0 min-w-[64px] ${copySuccess === 'address' ? 'bg-green-500 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white'}`}
                     >
                       {copySuccess === 'address' ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
@@ -611,7 +626,7 @@ export function Checkout({ onClose }: CheckoutProps) {
 
                 {snapshotPaymentMethod === 'swaps' && (
                   <a
-                    href={`https://www.swaps.app/?side=buy&amount=${snapshotSolAmount}&fiat=EUR&to=SOL%3Asolana&country=LT&method=apple_pay&toAddress=${SOLANA_ADDRESS}`}
+                    href={`https://www.swaps.app/?side=buy&amount=${snapshotSolAmount}&fiat=EUR&to=SOL%3Asolana&country=LT&method=apple_pay&toAddress=${depositAddress}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center justify-center gap-3 w-full bg-cyan-500 hover:bg-cyan-400 text-white font-bold py-4 px-6 rounded-xl transition-colors text-base mt-1"
@@ -627,7 +642,7 @@ export function Checkout({ onClose }: CheckoutProps) {
 
                 {snapshotPaymentMethod === 'paybis' && (
                   <a
-                    href={`https://paybis.com/buy-solana/?fromCurrencyCode=EUR&fromAmount=${successTotalWithFee.toFixed(2)}&toCurrencyCode=SOL&toAddress=${SOLANA_ADDRESS}`}
+                    href={`https://paybis.com/buy-solana/?fromCurrencyCode=EUR&fromAmount=${successTotalWithFee.toFixed(2)}&toCurrencyCode=SOL&toAddress=${depositAddress}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center justify-center gap-3 w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-6 rounded-xl transition-colors text-base mt-1"
@@ -1077,10 +1092,10 @@ export function Checkout({ onClose }: CheckoutProps) {
                   <p className="text-white/50 text-xs mb-1">{t('sendToAddress')}</p>
                   <div className="flex items-center gap-2">
                     <div className="flex-1 bg-black/40 border border-white/20 rounded-xl px-3 py-2.5 min-w-0">
-                      <p className="text-xs font-mono text-white/80 break-all leading-relaxed">{SOLANA_ADDRESS}</p>
+                      <p className="text-xs font-mono text-white/80 break-all leading-relaxed">{depositAddress}</p>
                     </div>
                     <button
-                      onClick={() => copyToClipboard(SOLANA_ADDRESS, 'address')}
+                      onClick={() => copyToClipboard(depositAddress, 'address')}
                       className={`flex flex-col items-center gap-1 px-3 py-2.5 rounded-xl transition-all font-semibold text-xs shrink-0 min-w-[60px] ${copySuccess === 'address' ? 'bg-green-500 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white'}`}
                     >
                       {copySuccess === 'address' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
@@ -1194,7 +1209,7 @@ function PaymentOption({ id, selected, onSelect, expanded, onToggleGuide, label,
 
 function SwapsGuide({ solAmount, totalEurWithFee }: { solAmount: string; totalEurWithFee: number }) {
   const { t } = useLanguage();
-  const swapsUrl = `https://www.swaps.app/?side=buy&amount=${solAmount}&fiat=EUR&to=SOL%3Asolana&country=LT&method=apple_pay&toAddress=${SOLANA_ADDRESS}`;
+  const swapsUrl = `https://www.swaps.app/?side=buy&amount=${solAmount}&fiat=EUR&to=SOL%3Asolana&country=LT&method=apple_pay&toAddress=${depositAddress}`;
   return (
     <div className="space-y-4">
       <div className="bg-gradient-to-r from-cyan-600/20 to-blue-600/20 border border-cyan-400/30 rounded-xl p-4">
@@ -1395,7 +1410,7 @@ function RevolutGuide({ solAmount, totalEurWithFee }: { solAmount: string; total
 }
 
 function PaybisGuide({ totalEurWithFee }: { totalEurWithFee: number }) {
-  const paybisUrl = `https://paybis.com/buy-solana/?fromCurrencyCode=EUR&fromAmount=${totalEurWithFee.toFixed(2)}&toCurrencyCode=SOL&toAddress=${SOLANA_ADDRESS}`;
+  const paybisUrl = `https://paybis.com/buy-solana/?fromCurrencyCode=EUR&fromAmount=${totalEurWithFee.toFixed(2)}&toCurrencyCode=SOL&toAddress=${depositAddress}`;
   return (
     <div className="space-y-4">
       <div className="bg-gradient-to-r from-blue-600/20 to-cyan-600/20 border border-blue-400/30 rounded-xl p-4">

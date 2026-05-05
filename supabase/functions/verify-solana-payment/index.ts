@@ -1,5 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "npm:@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -7,16 +7,15 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
-const SOLANA_ADDRESS = "A8CDFpdaLuzfZWDX2xbCXf8nXSJpz3K5urqTPGL126ai";
 const LAMPORTS_PER_SOL = 1_000_000_000;
 const TOLERANCE = 0.00005;
-const RPC_URL = "https://api.mainnet-beta.solana.com";
 
 async function rpcFetch(body: object): Promise<Response> {
+  const rpcUrl = Deno.env.get("HELIUS_RPC_URL") || "https://api.mainnet-beta.solana.com";
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10000);
   try {
-    return await fetch(RPC_URL, {
+    return await fetch(rpcUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
@@ -27,18 +26,18 @@ async function rpcFetch(body: object): Promise<Response> {
   }
 }
 
-async function getRecentTransactions(limit = 100): Promise<Array<{ signature: string; blockTime: number | null; err: null | object }>> {
+async function getRecentTransactions(address: string, limit = 25) {
   const res = await rpcFetch({
     jsonrpc: "2.0",
     id: 1,
     method: "getSignaturesForAddress",
-    params: [SOLANA_ADDRESS, { limit }],
+    params: [address, { limit }],
   });
   const data = await res.json();
-  return data?.result ?? [];
+  return (data?.result ?? []) as Array<{ signature: string; blockTime: number | null; err: null | object }>;
 }
 
-async function getTransactionAmount(signature: string): Promise<{ receivedSol: number } | null> {
+async function getTransactionAmount(signature: string, recipient: string): Promise<{ receivedSol: number } | null> {
   const res = await rpcFetch({
     jsonrpc: "2.0",
     id: 1,
@@ -53,15 +52,13 @@ async function getTransactionAmount(signature: string): Promise<{ receivedSol: n
     (k: { pubkey?: string } | string) => (typeof k === "string" ? k : k.pubkey ?? "")
   ) ?? [];
 
-  const recipientIndex = accountKeys.indexOf(SOLANA_ADDRESS);
+  const recipientIndex = accountKeys.indexOf(recipient);
   if (recipientIndex === -1) return null;
 
   const preBalances: number[] = tx.meta?.preBalances ?? [];
   const postBalances: number[] = tx.meta?.postBalances ?? [];
   const receivedLamports = (postBalances[recipientIndex] ?? 0) - (preBalances[recipientIndex] ?? 0);
-  const receivedSol = receivedLamports / LAMPORTS_PER_SOL;
-
-  return { receivedSol };
+  return { receivedSol: receivedLamports / LAMPORTS_PER_SOL };
 }
 
 Deno.serve(async (req: Request) => {
@@ -71,7 +68,6 @@ Deno.serve(async (req: Request) => {
 
   try {
     const { order_id } = await req.json();
-
     if (!order_id) {
       return new Response(JSON.stringify({ error: "Missing order_id" }), {
         status: 400,
@@ -81,12 +77,12 @@ Deno.serve(async (req: Request) => {
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
     const { data: order, error: orderError } = await supabase
       .from("orders")
-      .select("id, payment_status, transaction_signature, crypto_amount, created_at")
+      .select("id, payment_status, transaction_signature, crypto_amount, created_at, deposit_address")
       .eq("id", order_id)
       .maybeSingle();
 
@@ -97,50 +93,35 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    if (order.payment_status === "paid") {
+    if (order.payment_status === "paid" || order.payment_status === "confirmed") {
       return new Response(JSON.stringify({ confirmed: true, signature: order.transaction_signature }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (!order.deposit_address) {
+      return new Response(JSON.stringify({ confirmed: false, error: "no_deposit_address" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const expectedSolNum = parseFloat(order.crypto_amount);
     if (isNaN(expectedSolNum) || expectedSolNum <= 0) {
-      return new Response(JSON.stringify({ error: "Invalid crypto_amount in order" }), {
+      return new Response(JSON.stringify({ error: "Invalid crypto_amount" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const orderCreatedAt = new Date(order.created_at).getTime() / 1000;
+    const sigs = await getRecentTransactions(order.deposit_address, 25);
+    const candidates = sigs.filter((s) => s.err === null && s.blockTime != null && s.blockTime >= orderCreatedAt - 60);
 
-    const allSignatures = await getRecentTransactions(100);
+    for (const sig of candidates) {
+      const txInfo = await getTransactionAmount(sig.signature, order.deposit_address);
+      if (!txInfo || txInfo.receivedSol <= 0) continue;
 
-    const candidateSignatures = allSignatures.filter(
-      (s) => s.err === null && s.blockTime != null && s.blockTime >= orderCreatedAt
-    );
-
-    const windowStart = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
-    const { data: paidOrders } = await supabase
-      .from("orders")
-      .select("transaction_signature")
-      .eq("payment_status", "paid")
-      .gte("payment_confirmed_at", windowStart)
-      .not("transaction_signature", "is", null);
-
-    const usedSignatures = new Set(
-      (paidOrders ?? [])
-        .map((o: { transaction_signature: string | null }) => o.transaction_signature)
-        .filter(Boolean) as string[]
-    );
-
-    for (const sig of candidateSignatures) {
-      if (usedSignatures.has(sig.signature)) continue;
-
-      const txInfo = await getTransactionAmount(sig.signature);
-      if (!txInfo) continue;
-      if (txInfo.receivedSol <= 0) continue;
-
-      if (Math.abs(txInfo.receivedSol - expectedSolNum) <= TOLERANCE) {
+      if (Math.abs(txInfo.receivedSol - expectedSolNum) <= TOLERANCE || txInfo.receivedSol >= expectedSolNum - TOLERANCE) {
         const { data: updated } = await supabase
           .from("orders")
           .update({
@@ -156,38 +137,30 @@ Deno.serve(async (req: Request) => {
           .select("id")
           .maybeSingle();
 
-        if (!updated) {
-          const { data: existing } = await supabase
-            .from("orders")
-            .select("transaction_signature")
-            .eq("id", order_id)
-            .maybeSingle();
-          return new Response(
-            JSON.stringify({ confirmed: true, signature: existing?.transaction_signature ?? sig.signature }),
-            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
+        if (updated) {
+          EdgeRuntime.waitUntil((async () => {
+            try {
+              const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+              const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+              await fetch(`${supabaseUrl}/functions/v1/send-order-email`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${supabaseKey}` },
+                body: JSON.stringify({ order_id, type: "payment_confirmed" }),
+              });
+              await fetch(`${supabaseUrl}/functions/v1/sweep-payments`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${supabaseKey}` },
+                body: JSON.stringify({ order_id }),
+              });
+            } catch (e) {
+              console.error("post-confirm tasks failed:", e);
+            }
+          })());
         }
-
-        EdgeRuntime.waitUntil((async () => {
-          try {
-            const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-            const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-            await fetch(`${supabaseUrl}/functions/v1/send-order-email`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${supabaseKey}`,
-              },
-              body: JSON.stringify({ order_id, type: "payment_confirmed" }),
-            });
-          } catch (e) {
-            console.error("Failed to send payment confirmation email:", e);
-          }
-        })());
 
         return new Response(
           JSON.stringify({ confirmed: true, signature: sig.signature, received_sol: txInfo.receivedSol }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
     }
@@ -196,7 +169,8 @@ Deno.serve(async (req: Request) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
-    return new Response(JSON.stringify({ error: String(err) }), {
+    const message = err instanceof Error ? err.message : String(err);
+    return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
