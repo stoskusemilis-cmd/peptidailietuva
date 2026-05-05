@@ -153,8 +153,11 @@ Deno.serve(async (req: Request) => {
 
     <div style="background:#0a1929;border:1px solid #1e3a5f;border-radius:16px;padding:20px;margin-bottom:20px;">
       <h3 style="margin:0 0 12px;font-size:13px;color:#64748b;text-transform:uppercase;letter-spacing:1px;">Solana mokėjimo informacija</h3>
-      <p style="margin:0 0 8px;color:#94a3b8;font-size:13px;">Mokėjimo statusas: <span style="color:${order.payment_status === 'paid' ? '#4ade80' : '#fbbf24'};font-weight:700;">${order.payment_status === 'paid' ? 'PATVIRTINTAS' : 'LAUKIAMA'}</span></p>
-      <p style="margin:0;color:#64748b;font-size:11px;font-family:monospace;word-break:break-all;">Wallet: A8CDFpdaLuzfZWDX2xbCXf8nXSJpz3K5urqTPGL126ai</p>
+      <p style="margin:0 0 8px;color:#94a3b8;font-size:13px;">Mokėjimo statusas: <span style="color:${order.payment_status === 'confirmed' || order.payment_status === 'paid' ? '#4ade80' : '#fbbf24'};font-weight:700;">${order.payment_status === 'confirmed' || order.payment_status === 'paid' ? 'PATVIRTINTAS' : 'LAUKIAMA'}</span></p>
+      <p style="margin:0 0 6px;color:#64748b;font-size:12px;">Unikalus depozito adresas (į jį klientas siuntė SOL):</p>
+      <p style="margin:0 0 10px;color:#22d3ee;font-size:12px;font-family:monospace;word-break:break-all;background:#0d2137;padding:8px 10px;border-radius:6px;border:1px solid #1e3a5f;">${escapeHtml(order.deposit_address) || "—"}</p>
+      ${order.transaction_signature ? `<p style="margin:0 0 6px;color:#64748b;font-size:12px;">Transakcijos parašas:</p><p style="margin:0 0 10px;color:#93c5fd;font-size:11px;font-family:monospace;word-break:break-all;"><a href="https://solscan.io/tx/${escapeHtml(order.transaction_signature)}" style="color:#93c5fd;">${escapeHtml(order.transaction_signature)}</a></p>` : ''}
+      <p style="margin:0;color:#64748b;font-size:11px;font-family:monospace;word-break:break-all;">Pagrindinė piniginė: A8CDFpdaLuzfZWDX2xbCXf8nXSJpz3K5urqTPGL126ai</p>
     </div>
 
     <div style="text-align:center;color:#334155;font-size:11px;margin-top:24px;">
