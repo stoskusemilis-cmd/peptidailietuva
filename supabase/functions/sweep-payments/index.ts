@@ -18,7 +18,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
-const RENT_EXEMPT_LAMPORTS = 890880;
 const PRIORITY_FEE_LAMPORTS = 5000;
 const FEE_BUFFER_LAMPORTS = 5000;
 
@@ -108,7 +107,7 @@ Deno.serve(async (req: Request) => {
           });
         }
 
-        const sweepAmount = balance - FEE_BUFFER_LAMPORTS - PRIORITY_FEE_LAMPORTS - RENT_EXEMPT_LAMPORTS;
+        const sweepAmount = balance - FEE_BUFFER_LAMPORTS - PRIORITY_FEE_LAMPORTS;
         if (sweepAmount <= 0) {
           results.push({ order_id: order.id, status: "confirmed_no_sweep", balance });
           continue;
