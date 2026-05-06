@@ -96,7 +96,7 @@ Deno.serve(async (req: Request) => {
         if (order.payment_status !== "confirmed" && order.payment_status !== "paid") {
           const sigs = await connection.getSignaturesForAddress(depositPubkey, { limit: 1 });
           const txSig = sigs[0]?.signature ?? null;
-          await supabase
+          const { data: justConfirmed } = await supabase
             .from("orders")
             .update({
               payment_status: "confirmed",
@@ -104,7 +104,10 @@ Deno.serve(async (req: Request) => {
               payment_confirmed_at: new Date().toISOString(),
               transaction_signature: txSig,
             })
-            .eq("id", order.id);
+            .eq("id", order.id)
+            .in("payment_status", ["pending"])
+            .select("id")
+            .maybeSingle();
           await supabase.from("payment_events").insert({
             order_id: order.id,
             event_type: "payment_confirmed",
@@ -115,6 +118,21 @@ Deno.serve(async (req: Request) => {
             source: "sweep-payments",
             details: { balance_lamports: balance, expected_lamports: expectedLamports },
           });
+          if (justConfirmed) {
+            EdgeRuntime.waitUntil((async () => {
+              try {
+                const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+                const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+                await fetch(`${supabaseUrl}/functions/v1/send-order-email`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json", "Authorization": `Bearer ${supabaseKey}` },
+                  body: JSON.stringify({ order_id: order.id, type: "payment_confirmed" }),
+                });
+              } catch (e) {
+                console.error("sweep: payment_confirmed email failed:", e);
+              }
+            })());
+          }
         }
 
         const sweepAmount = balance - TOTAL_TX_FEE_LAMPORTS;
