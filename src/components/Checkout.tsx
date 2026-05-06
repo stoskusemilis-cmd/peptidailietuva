@@ -373,16 +373,6 @@ export function Checkout({ onClose }: CheckoutProps) {
       setOrderId(order.id);
       clearCart();
 
-      if (selectedPayment === 'swaps') {
-        const swapsUrl = `https://www.swaps.app/?side=buy&amount=${solAmount}&fiat=EUR&to=SOL%3Asolana&country=LT&method=apple_pay&toAddress=${orderDepositAddress}`;
-        window.open(swapsUrl, '_blank');
-      }
-
-      if (selectedPayment === 'paybis') {
-        const paybisUrl = `https://paybis.com/buy-solana/?fromCurrencyCode=EUR&fromAmount=${totalEurWithFee.toFixed(2)}&toCurrencyCode=SOL&toAddress=${orderDepositAddress}`;
-        window.open(paybisUrl, '_blank');
-      }
-
       setStep('pending');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : (typeof err === 'object' && err !== null && 'message' in err ? String((err as {message: unknown}).message) : String(err));
@@ -466,36 +456,6 @@ export function Checkout({ onClose }: CheckoutProps) {
                 <p className="text-red-200 text-xs font-bold text-center">{t('exactSolWarning')}</p>
               </div>
             </div>
-
-            {snapshotPaymentMethod === 'swaps' && (
-              <a
-                href={`https://www.swaps.app/?side=buy&amount=${snapshotSolAmount}&fiat=EUR&to=SOL%3Asolana&country=LT&method=apple_pay&toAddress=${depositAddress}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-3 px-5 rounded-xl mb-4 transition-colors text-sm"
-              >
-                <svg viewBox="0 0 128 128" className="w-5 h-5 shrink-0" fill="none">
-                  <rect width="128" height="128" rx="26" fill="white" fillOpacity="0.2"/>
-                  <path d="M32 80C32 80 40 56 64 56C88 56 96 32 96 32" stroke="white" strokeWidth="10" strokeLinecap="round"/>
-                  <path d="M32 48C32 48 40 72 64 72C88 72 96 96 96 96" stroke="white" strokeWidth="10" strokeLinecap="round" strokeOpacity="0.6"/>
-                </svg>
-                {t('guideSwapsBtn').replace('{amount}', snapshotSolAmount)}
-              </a>
-            )}
-
-            {snapshotPaymentMethod === 'paybis' && (
-              <a
-                href={`https://paybis.com/buy-solana/?fromCurrencyCode=EUR&fromAmount=${(snapshotTotalEur - (snapshotDiscount?.amount || 0) + snapshotShippingFee).toFixed(2)}&toCurrencyCode=SOL&toAddress=${depositAddress}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-5 rounded-xl mb-4 transition-colors text-sm"
-              >
-                <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" fill="currentColor">
-                  <path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/>
-                </svg>
-                Mokėti kortele per Paybis — {(snapshotTotalEur - (snapshotDiscount?.amount || 0) + snapshotShippingFee).toFixed(2)}€
-              </a>
-            )}
 
             <div className="bg-yellow-500/10 border border-yellow-400/20 rounded-xl p-4 mb-4">
               <p className="text-yellow-200/80 text-xs mb-2 font-medium">{t('pendingContact')}</p>

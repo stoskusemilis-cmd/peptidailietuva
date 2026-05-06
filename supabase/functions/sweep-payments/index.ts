@@ -131,7 +131,7 @@ Deno.serve(async (req: Request) => {
 
         for (let attempt = 1; attempt <= MAX_SEND_RETRIES; attempt++) {
           try {
-            const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
+            const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("finalized");
             const tx = new Transaction({ feePayer: kp.publicKey, blockhash, lastValidBlockHeight });
             tx.add(
               ComputeBudgetProgram.setComputeUnitLimit({ units: COMPUTE_UNIT_LIMIT }),
@@ -143,19 +143,50 @@ Deno.serve(async (req: Request) => {
               }),
             );
             tx.sign(kp);
-            const sig = await connection.sendRawTransaction(tx.serialize(), {
+            const rawTx = tx.serialize();
+
+            const sig = await connection.sendRawTransaction(rawTx, {
               skipPreflight: false,
-              maxRetries: 5,
+              maxRetries: 0,
             });
-            await connection.confirmTransaction(
-              { signature: sig, blockhash, lastValidBlockHeight },
-              "confirmed",
-            );
+
+            let landed = false;
+            const deadline = Date.now() + 90_000;
+            while (Date.now() < deadline) {
+              await sleep(2000);
+              const statuses = await connection.getSignatureStatuses([sig], { searchTransactionHistory: true });
+              const status = statuses.value[0];
+              if (status) {
+                if (status.err) {
+                  throw new Error(`Transaction failed on-chain: ${JSON.stringify(status.err)}`);
+                }
+                if (status.confirmationStatus === "confirmed" || status.confirmationStatus === "finalized") {
+                  landed = true;
+                  break;
+                }
+              } else {
+                try {
+                  await connection.sendRawTransaction(rawTx, { skipPreflight: true, maxRetries: 0 });
+                } catch { /* ignore rebroadcast errors */ }
+                const bhValid = await connection.isBlockhashValid(blockhash, { commitment: "confirmed" });
+                if (!bhValid.value) break;
+              }
+            }
+
+            if (!landed) {
+              throw new Error(`Transaction ${sig} did not land within timeout`);
+            }
+
+            const postBalance = await connection.getBalance(depositPubkey, "confirmed");
+            if (postBalance >= balance) {
+              throw new Error(`Sweep tx ${sig} landed but deposit balance unchanged (${postBalance})`);
+            }
+
             sentSig = sig;
             break;
           } catch (e) {
             lastError = e;
-            if (attempt < MAX_SEND_RETRIES) await sleep(1500 * attempt);
+            if (attempt < MAX_SEND_RETRIES) await sleep(2000 * attempt);
           }
         }
 
