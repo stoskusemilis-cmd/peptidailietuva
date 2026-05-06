@@ -25,6 +25,11 @@ const PRIORITY_FEE_LAMPORTS = Math.ceil(
   (COMPUTE_UNIT_LIMIT * COMPUTE_UNIT_PRICE_MICROLAMPORTS) / 1_000_000,
 );
 const TOTAL_TX_FEE_LAMPORTS = BASE_TX_FEE_LAMPORTS + PRIORITY_FEE_LAMPORTS;
+const MAX_SEND_RETRIES = 3;
+
+async function sleep(ms: number) {
+  return new Promise((r) => setTimeout(r, ms));
+}
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -56,14 +61,14 @@ Deno.serve(async (req: Request) => {
     const seedHex = seed.toString("hex");
 
     let body: { order_id?: string } = {};
-    try { body = await req.json(); } catch { /* no body — sweep all */ }
+    try { body = await req.json(); } catch { /* no body — sweep all pending */ }
 
     const query = supabase
       .from("orders")
       .select("id, order_number, deposit_address, derivation_index, crypto_amount, payment_status, swept_at, created_at")
       .not("deposit_address", "is", null)
       .is("swept_at", null)
-      .gte("created_at", new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString());
+      .gte("created_at", new Date(Date.now() - 1000 * 60 * 60 * 72).toISOString());
 
     if (body.order_id) query.eq("id", body.order_id);
 
@@ -75,7 +80,7 @@ Deno.serve(async (req: Request) => {
     for (const order of orders ?? []) {
       try {
         const depositPubkey = new PublicKey(order.deposit_address as string);
-        const balance = await connection.getBalance(depositPubkey);
+        const balance = await connection.getBalance(depositPubkey, "confirmed");
         const expectedLamports = Math.round(Number(order.crypto_amount) * LAMPORTS_PER_SOL);
 
         if (balance <= 0) {
@@ -88,7 +93,7 @@ Deno.serve(async (req: Request) => {
           continue;
         }
 
-        if (order.payment_status !== "confirmed") {
+        if (order.payment_status !== "confirmed" && order.payment_status !== "paid") {
           const sigs = await connection.getSignaturesForAddress(depositPubkey, { limit: 1 });
           const txSig = sigs[0]?.signature ?? null;
           await supabase
@@ -121,27 +126,46 @@ Deno.serve(async (req: Request) => {
         const { key } = derivePath(`m/44'/501'/${order.derivation_index}'/0'`, seedHex);
         const kp = Keypair.fromSeed(key);
 
-        const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-        const tx = new Transaction({ feePayer: kp.publicKey, blockhash, lastValidBlockHeight });
-        tx.add(
-          ComputeBudgetProgram.setComputeUnitLimit({ units: COMPUTE_UNIT_LIMIT }),
-          ComputeBudgetProgram.setComputeUnitPrice({ microLamports: COMPUTE_UNIT_PRICE_MICROLAMPORTS }),
-          SystemProgram.transfer({
-            fromPubkey: kp.publicKey,
-            toPubkey: mainPubkey,
-            lamports: sweepAmount,
-          }),
-        );
-        tx.sign(kp);
-        const sig = await connection.sendRawTransaction(tx.serialize(), {
-          skipPreflight: false,
-          maxRetries: 3,
-        });
-        await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, "confirmed");
+        let lastError: unknown = null;
+        let sentSig: string | null = null;
+
+        for (let attempt = 1; attempt <= MAX_SEND_RETRIES; attempt++) {
+          try {
+            const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
+            const tx = new Transaction({ feePayer: kp.publicKey, blockhash, lastValidBlockHeight });
+            tx.add(
+              ComputeBudgetProgram.setComputeUnitLimit({ units: COMPUTE_UNIT_LIMIT }),
+              ComputeBudgetProgram.setComputeUnitPrice({ microLamports: COMPUTE_UNIT_PRICE_MICROLAMPORTS }),
+              SystemProgram.transfer({
+                fromPubkey: kp.publicKey,
+                toPubkey: mainPubkey,
+                lamports: sweepAmount,
+              }),
+            );
+            tx.sign(kp);
+            const sig = await connection.sendRawTransaction(tx.serialize(), {
+              skipPreflight: false,
+              maxRetries: 5,
+            });
+            await connection.confirmTransaction(
+              { signature: sig, blockhash, lastValidBlockHeight },
+              "confirmed",
+            );
+            sentSig = sig;
+            break;
+          } catch (e) {
+            lastError = e;
+            if (attempt < MAX_SEND_RETRIES) await sleep(1500 * attempt);
+          }
+        }
+
+        if (!sentSig) {
+          throw lastError instanceof Error ? lastError : new Error(String(lastError));
+        }
 
         await supabase
           .from("orders")
-          .update({ swept_at: new Date().toISOString(), sweep_signature: sig })
+          .update({ swept_at: new Date().toISOString(), sweep_signature: sentSig })
           .eq("id", order.id);
 
         await supabase.from("payment_events").insert({
@@ -150,14 +174,24 @@ Deno.serve(async (req: Request) => {
           new_status: "swept",
           amount: sweepAmount / LAMPORTS_PER_SOL,
           currency: "SOL",
-          transaction_signature: sig,
+          transaction_signature: sentSig,
           source: "sweep-payments",
           details: { to: mainPubkey.toBase58(), from: kp.publicKey.toBase58() },
         });
 
-        results.push({ order_id: order.id, status: "swept", signature: sig, amount: sweepAmount });
+        results.push({ order_id: order.id, status: "swept", signature: sentSig, amount: sweepAmount });
       } catch (innerErr) {
         const message = innerErr instanceof Error ? innerErr.message : String(innerErr);
+        await supabase.from("payment_events").insert({
+          order_id: order.id,
+          event_type: "sweep_failed",
+          new_status: "error",
+          amount: 0,
+          currency: "SOL",
+          transaction_signature: "",
+          source: "sweep-payments",
+          details: { error: message },
+        });
         results.push({ order_id: order.id, status: "error", error: message });
       }
     }
