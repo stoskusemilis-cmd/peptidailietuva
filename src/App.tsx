@@ -10,9 +10,7 @@ import { useCart } from './contexts/CartContext';
 import { useLanguage } from './contexts/LanguageContext';
 import { supabase, Product } from './lib/supabase';
 import { isOutOfStock } from './lib/outOfStock';
-import { Loader, Mail, Send, Facebook, Instagram, Clock, CheckCircle, Lock, Zap, Truck, Shield, ChevronDown, ChevronUp, Copy, Check } from 'lucide-react';
-
-const SOLANA_ADDRESS = 'A8CDFpdaLuzfZWDX2xbCXf8nXSJpz3K5urqTPGL126ai';
+import { Loader, Mail, Send, Facebook, Instagram, Clock, CheckCircle, Lock, Zap, Truck, Shield, ChevronDown, ChevronUp } from 'lucide-react';
 
 function App() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -79,7 +77,6 @@ function App() {
   };
 
   const [openPayment, setOpenPayment] = useState<number | null>(null);
-  const [copiedAddress, setCopiedAddress] = useState(false);
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -87,14 +84,6 @@ function App() {
 
   const togglePayment = (idx: number) => {
     setOpenPayment(prev => prev === idx ? null : idx);
-  };
-
-  const copyAddress = async () => {
-    try {
-      await navigator.clipboard.writeText(SOLANA_ADDRESS);
-      setCopiedAddress(true);
-      setTimeout(() => setCopiedAddress(false), 2000);
-    } catch {}
   };
 
   return (
@@ -424,22 +413,6 @@ function App() {
 
               <div className="bg-red-500/15 border-2 border-red-400/50 rounded-xl p-4 mb-4">
                 <p className="text-red-200 text-sm font-bold text-center">{t('exactSolWarning')}</p>
-              </div>
-
-              <div className="bg-gradient-to-br from-[#0d2137] to-[#0a1929] border-2 border-cyan-400/30 rounded-2xl p-4">
-                <p className="text-white/50 text-xs font-semibold uppercase tracking-widest mb-3 text-center">Peptidai Lietuva pagrindinė Solana SOL sąskaita</p>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 bg-black/40 border border-white/20 rounded-xl px-3 py-3 min-w-0">
-                    <p className="text-xs font-mono text-white/80 break-all leading-relaxed">{SOLANA_ADDRESS}</p>
-                  </div>
-                  <button
-                    onClick={copyAddress}
-                    className={`flex flex-col items-center gap-1 px-3 py-3 rounded-xl transition-all font-semibold text-xs shrink-0 min-w-[64px] ${copiedAddress ? 'bg-green-500 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white'}`}
-                  >
-                    {copiedAddress ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                    {copiedAddress ? t('pendingCopied') : t('pendingCopy')}
-                  </button>
-                </div>
               </div>
             </div>
           </div>
