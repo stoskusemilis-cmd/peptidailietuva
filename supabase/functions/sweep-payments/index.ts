@@ -18,8 +18,13 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
-const PRIORITY_FEE_LAMPORTS = 5000;
-const FEE_BUFFER_LAMPORTS = 5000;
+const BASE_TX_FEE_LAMPORTS = 5000;
+const COMPUTE_UNIT_LIMIT = 1000;
+const COMPUTE_UNIT_PRICE_MICROLAMPORTS = 1000;
+const PRIORITY_FEE_LAMPORTS = Math.ceil(
+  (COMPUTE_UNIT_LIMIT * COMPUTE_UNIT_PRICE_MICROLAMPORTS) / 1_000_000,
+);
+const TOTAL_TX_FEE_LAMPORTS = BASE_TX_FEE_LAMPORTS + PRIORITY_FEE_LAMPORTS;
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -107,7 +112,7 @@ Deno.serve(async (req: Request) => {
           });
         }
 
-        const sweepAmount = balance - FEE_BUFFER_LAMPORTS - PRIORITY_FEE_LAMPORTS;
+        const sweepAmount = balance - TOTAL_TX_FEE_LAMPORTS;
         if (sweepAmount <= 0) {
           results.push({ order_id: order.id, status: "confirmed_no_sweep", balance });
           continue;
@@ -119,7 +124,8 @@ Deno.serve(async (req: Request) => {
         const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
         const tx = new Transaction({ feePayer: kp.publicKey, blockhash, lastValidBlockHeight });
         tx.add(
-          ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 1000 }),
+          ComputeBudgetProgram.setComputeUnitLimit({ units: COMPUTE_UNIT_LIMIT }),
+          ComputeBudgetProgram.setComputeUnitPrice({ microLamports: COMPUTE_UNIT_PRICE_MICROLAMPORTS }),
           SystemProgram.transfer({
             fromPubkey: kp.publicKey,
             toPubkey: mainPubkey,
