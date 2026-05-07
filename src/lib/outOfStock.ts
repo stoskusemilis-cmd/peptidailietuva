@@ -1,6 +1,4 @@
 const OUT_OF_STOCK_NAMES = new Set([
-  'MOTS-C 40MG',
-  'TESAMORELIN 10MG',
   'GLOW 70MG',
   'KLOW 80MG',
   'HGH 15IU',
