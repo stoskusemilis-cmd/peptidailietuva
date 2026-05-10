@@ -88,12 +88,14 @@ Deno.serve(async (req: Request) => {
           continue;
         }
 
-        if (balance + 5000 < expectedLamports) {
-          results.push({ order_id: order.id, status: "underpaid", balance, expected: expectedLamports });
+        if (balance <= TOTAL_TX_FEE_LAMPORTS) {
+          results.push({ order_id: order.id, status: "dust", balance });
           continue;
         }
 
-        if (order.payment_status !== "confirmed" && order.payment_status !== "paid") {
+        const isUnderpaid = balance + 5000 < expectedLamports;
+
+        if (!isUnderpaid && order.payment_status !== "confirmed" && order.payment_status !== "paid") {
           const sigs = await connection.getSignaturesForAddress(depositPubkey, { limit: 1 });
           const txSig = sigs[0]?.signature ?? null;
           const { data: justConfirmed } = await supabase
