@@ -10,7 +10,7 @@ import {
   Transaction,
   LAMPORTS_PER_SOL,
   ComputeBudgetProgram,
-} from "npm:@solana/web3.js@1.98.4";
+} from "npm:@solana/web3.js@1.87.6";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -93,9 +93,9 @@ Deno.serve(async (req: Request) => {
           continue;
         }
 
-        const isUnderpaid = balance + 5000 < expectedLamports;
+        const isFullyPaid = balance + 5000 >= expectedLamports;
 
-        if (!isUnderpaid && order.payment_status !== "confirmed" && order.payment_status !== "paid") {
+        if (isFullyPaid && order.payment_status !== "confirmed" && order.payment_status !== "paid") {
           const sigs = await connection.getSignaturesForAddress(depositPubkey, { limit: 1 });
           const txSig = sigs[0]?.signature ?? null;
           const { data: justConfirmed } = await supabase
