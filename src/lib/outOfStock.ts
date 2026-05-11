@@ -4,6 +4,7 @@ const OUT_OF_STOCK_NAMES = new Set([
   'HGH 15IU',
   'HGH 24IU',
   'MASTERONE E 2000MG',
+  'SEMAX 10MG',
 ]);
 
 export function isOutOfStock(product: { name: string; stock?: number }): boolean {
