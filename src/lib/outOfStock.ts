@@ -1,6 +1,5 @@
 const OUT_OF_STOCK_NAMES = new Set([
   'GLOW 70MG',
-  'KLOW 80MG',
   'HGH 15IU',
   'HGH 24IU',
   'MASTERONE E 2000MG',
