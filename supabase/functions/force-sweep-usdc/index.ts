@@ -7,6 +7,7 @@ import {
   Keypair,
   PublicKey,
   Transaction,
+  SystemProgram,
   ComputeBudgetProgram,
   TransactionInstruction,
 } from "npm:@solana/web3.js@1.87.6";
@@ -21,8 +22,9 @@ const USDC_MINT = new PublicKey("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
 const TOKEN_PROGRAM_ID = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
 const ASSOCIATED_TOKEN_PROGRAM_ID = new PublicKey("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL");
 
-const COMPUTE_UNIT_LIMIT = 50_000;
+const COMPUTE_UNIT_LIMIT = 100_000;
 const COMPUTE_UNIT_PRICE_MICROLAMPORTS = 5000;
+const FEE_LAMPORTS = 15000;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -41,7 +43,7 @@ function createTransferInstruction(
   amount: bigint,
 ): TransactionInstruction {
   const data = Buffer.alloc(9);
-  data.writeUInt8(3, 0); // Transfer instruction index
+  data.writeUInt8(3, 0);
   data.writeBigUInt64LE(amount, 1);
   return new TransactionInstruction({
     keys: [
@@ -97,7 +99,7 @@ Deno.serve(async (req: Request) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    let body: { deposit_address?: string; order_id?: string } = {};
+    let body: { deposit_address?: string; order_id?: string; fee_payer_index?: number } = {};
     try { body = await req.json(); } catch {}
 
     if (!body.deposit_address && !body.order_id) {
@@ -124,7 +126,6 @@ Deno.serve(async (req: Request) => {
     const sourceAta = getAssociatedTokenAddress(depositPubkey, USDC_MINT);
     const destAta = getAssociatedTokenAddress(mainPubkey, USDC_MINT);
 
-    // Get USDC balance of deposit address
     const tokenAccountInfo = await rpc("getTokenAccountBalance", [sourceAta.toBase58()]);
     if (!tokenAccountInfo || !tokenAccountInfo.value) {
       return new Response(JSON.stringify({ ok: false, reason: "no_usdc_account", deposit_address: order.deposit_address }), {
@@ -139,37 +140,57 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // Derive deposit keypair (token owner/signer)
+    // Derive deposit keypair (USDC token owner)
     const { key } = derivePath(`m/44'/501'/${order.derivation_index}'/0'`, seedHex);
     const depositKp = Keypair.fromSeed(key);
 
-    // Try multiple derivation paths to find main wallet keypair
-    let mainKp: Keypair | null = null;
-    const mainAddr = mainPubkey.toBase58();
-    const pathsToTry = [
-      `m/44'/501'/0'/0'`,
-      `m/44'/501'/0'`,
-      `m/44'/501'/1'/0'`,
-    ];
-    for (const path of pathsToTry) {
-      const { key: k } = derivePath(path, seedHex);
+    // Find a fee payer: scan other derived addresses that have SOL
+    let feePayerKp: Keypair | null = null;
+    let feePayerBalance = 0;
+
+    // If fee_payer_index specified, try that first
+    const indicesToTry: number[] = [];
+    if (body.fee_payer_index !== undefined) {
+      indicesToTry.push(body.fee_payer_index);
+    }
+
+    // Get recent orders with derivation indices that might have leftover SOL
+    const { data: recentOrders } = await supabase
+      .from("orders")
+      .select("derivation_index, deposit_address")
+      .not("derivation_index", "is", null)
+      .not("deposit_address", "is", null)
+      .neq("derivation_index", order.derivation_index)
+      .order("created_at", { ascending: false })
+      .limit(30);
+
+    if (recentOrders) {
+      for (const o of recentOrders) {
+        if (!indicesToTry.includes(o.derivation_index)) {
+          indicesToTry.push(o.derivation_index);
+        }
+      }
+    }
+
+    for (const idx of indicesToTry) {
+      const { key: k } = derivePath(`m/44'/501'/${idx}'/0'`, seedHex);
       const candidate = Keypair.fromSeed(k);
-      if (candidate.publicKey.toBase58() === mainAddr) {
-        mainKp = candidate;
+      const bal = await rpc("getBalance", [candidate.publicKey.toBase58(), { commitment: "confirmed" }]);
+      const balValue = bal?.value ?? 0;
+      if (balValue >= FEE_LAMPORTS) {
+        feePayerKp = candidate;
+        feePayerBalance = balValue;
         break;
       }
     }
-    if (!mainKp) {
-      // Return debug info to figure out the correct derivation path
-      const derived = pathsToTry.map((p) => {
-        const { key: k } = derivePath(p, seedHex);
-        return { path: p, address: Keypair.fromSeed(k).publicKey.toBase58() };
-      });
+
+    if (!feePayerKp) {
       return new Response(JSON.stringify({
         ok: false,
-        reason: "cannot_find_main_wallet_keypair",
-        main_wallet: mainAddr,
-        derived_addresses: derived,
+        reason: "no_fee_payer_found",
+        message: "No derived address with enough SOL to pay fees. Send ~0.01 SOL to the deposit address or any derived address.",
+        deposit_address: order.deposit_address,
+        indices_checked: indicesToTry.length,
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
@@ -186,20 +207,25 @@ Deno.serve(async (req: Request) => {
         const blockhash: string = bh.value.blockhash;
         const lastValidBlockHeight: number = bh.value.lastValidBlockHeight;
 
-        // Main wallet pays the fee since deposit address has 0 SOL
-        const tx = new Transaction({ feePayer: mainKp.publicKey, blockhash, lastValidBlockHeight });
+        const tx = new Transaction({ feePayer: feePayerKp.publicKey, blockhash, lastValidBlockHeight });
         tx.add(
           ComputeBudgetProgram.setComputeUnitLimit({ units: COMPUTE_UNIT_LIMIT }),
           ComputeBudgetProgram.setComputeUnitPrice({ microLamports: COMPUTE_UNIT_PRICE_MICROLAMPORTS }),
         );
 
         if (needsCreateAta) {
-          tx.add(createAssociatedTokenAccountInstruction(mainKp.publicKey, destAta, mainPubkey, USDC_MINT));
+          tx.add(createAssociatedTokenAccountInstruction(feePayerKp.publicKey, destAta, mainPubkey, USDC_MINT));
         }
 
         tx.add(createTransferInstruction(sourceAta, destAta, depositKp.publicKey, usdcAmount));
 
-        tx.sign(mainKp, depositKp);
+        // Sign with both fee payer and deposit keypair (token owner)
+        const signers = [feePayerKp];
+        if (feePayerKp.publicKey.toBase58() !== depositKp.publicKey.toBase58()) {
+          signers.push(depositKp);
+        }
+        tx.sign(...signers);
+
         const rawTx = tx.serialize();
         const rawTxB64 = btoa(String.fromCharCode(...rawTx));
 
@@ -249,6 +275,7 @@ Deno.serve(async (req: Request) => {
       from: order.deposit_address,
       to: mainPubkey.toBase58(),
       dest_ata: destAta.toBase58(),
+      fee_payer: feePayerKp.publicKey.toBase58(),
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
