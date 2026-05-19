@@ -144,43 +144,52 @@ Deno.serve(async (req: Request) => {
     const { key } = derivePath(`m/44'/501'/${order.derivation_index}'/0'`, seedHex);
     const depositKp = Keypair.fromSeed(key);
 
-    // Find a fee payer: scan other derived addresses that have SOL
+    // Find a fee payer: first check the deposit address itself, then scan others
     let feePayerKp: Keypair | null = null;
     let feePayerBalance = 0;
 
-    // If fee_payer_index specified, try that first
-    const indicesToTry: number[] = [];
-    if (body.fee_payer_index !== undefined) {
-      indicesToTry.push(body.fee_payer_index);
+    // Check deposit address SOL balance first (user may have sent SOL here)
+    const depositSolBal = await rpc("getBalance", [depositKp.publicKey.toBase58(), { commitment: "confirmed" }]);
+    if ((depositSolBal?.value ?? 0) >= FEE_LAMPORTS) {
+      feePayerKp = depositKp;
+      feePayerBalance = depositSolBal.value;
     }
 
-    // Get recent orders with derivation indices that might have leftover SOL
-    const { data: recentOrders } = await supabase
-      .from("orders")
-      .select("derivation_index, deposit_address")
-      .not("derivation_index", "is", null)
-      .not("deposit_address", "is", null)
-      .neq("derivation_index", order.derivation_index)
-      .order("created_at", { ascending: false })
-      .limit(30);
+    if (!feePayerKp) {
+      // If fee_payer_index specified, try that
+      const indicesToTry: number[] = [];
+      if (body.fee_payer_index !== undefined) {
+        indicesToTry.push(body.fee_payer_index);
+      }
 
-    if (recentOrders) {
-      for (const o of recentOrders) {
-        if (!indicesToTry.includes(o.derivation_index)) {
-          indicesToTry.push(o.derivation_index);
+      // Get recent orders with derivation indices that might have leftover SOL
+      const { data: recentOrders } = await supabase
+        .from("orders")
+        .select("derivation_index, deposit_address")
+        .not("derivation_index", "is", null)
+        .not("deposit_address", "is", null)
+        .neq("derivation_index", order.derivation_index)
+        .order("created_at", { ascending: false })
+        .limit(30);
+
+      if (recentOrders) {
+        for (const o of recentOrders) {
+          if (!indicesToTry.includes(o.derivation_index)) {
+            indicesToTry.push(o.derivation_index);
+          }
         }
       }
-    }
 
-    for (const idx of indicesToTry) {
-      const { key: k } = derivePath(`m/44'/501'/${idx}'/0'`, seedHex);
-      const candidate = Keypair.fromSeed(k);
-      const bal = await rpc("getBalance", [candidate.publicKey.toBase58(), { commitment: "confirmed" }]);
-      const balValue = bal?.value ?? 0;
-      if (balValue >= FEE_LAMPORTS) {
-        feePayerKp = candidate;
-        feePayerBalance = balValue;
-        break;
+      for (const idx of indicesToTry) {
+        const { key: k } = derivePath(`m/44'/501'/${idx}'/0'`, seedHex);
+        const candidate = Keypair.fromSeed(k);
+        const bal = await rpc("getBalance", [candidate.publicKey.toBase58(), { commitment: "confirmed" }]);
+        const balValue = bal?.value ?? 0;
+        if (balValue >= FEE_LAMPORTS) {
+          feePayerKp = candidate;
+          feePayerBalance = balValue;
+          break;
+        }
       }
     }
 
@@ -190,7 +199,6 @@ Deno.serve(async (req: Request) => {
         reason: "no_fee_payer_found",
         message: "No derived address with enough SOL to pay fees. Send ~0.01 SOL to the deposit address or any derived address.",
         deposit_address: order.deposit_address,
-        indices_checked: indicesToTry.length,
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
