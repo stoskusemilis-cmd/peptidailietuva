@@ -65,9 +65,7 @@ export function Checkout({ onClose }: CheckoutProps) {
   const totalEurWithFee = discountedTotal + shippingFee;
   const activeSolPrice = lockedSolPrice ?? solPrice;
   const baseSolAmount = parseFloat((totalEurWithFee / activeSolPrice).toFixed(4));
-  const solAmount = selectedPayment === 'onramp'
-    ? (totalEurWithFee / activeSolPrice).toFixed(2)
-    : (baseSolAmount + uniqueSolOffset).toFixed(4);
+  const solAmount = (baseSolAmount + uniqueSolOffset).toFixed(4);
 
   useEffect(() => {
     let active = true;
@@ -376,7 +374,8 @@ export function Checkout({ onClose }: CheckoutProps) {
       clearCart();
 
       if (selectedPayment === 'onramp') {
-        window.open(`https://onramp.money/main/buy/?appId=1&coinCode=sol&network=solana&walletAddress=${orderDepositAddress}`, '_blank');
+        const onrampEurAmount = Math.ceil(totalEurWithFee * 100) / 100;
+        window.open(`https://buy.onramper.com/?mode=buy&defaultFiat=EUR&defaultAmount=${onrampEurAmount}&defaultCrypto=sol_solana&onlyCryptos=sol_solana&onlyCryptoNetworks=solana&networkWallets=SOLANA:${orderDepositAddress}`, '_blank');
       }
 
       setStep('pending');
@@ -665,21 +664,20 @@ export function Checkout({ onClose }: CheckoutProps) {
 
               {snapshotPaymentMethod === 'onramp' && (
                 <div className="bg-gradient-to-br from-emerald-600/20 to-emerald-900/20 border-2 border-emerald-400/50 rounded-2xl p-5 mb-4">
-                  <p className="text-emerald-100 text-base font-bold text-center mb-2">Nupirkite SOL per Onramp</p>
-                  <p className="text-white/60 text-sm text-center mb-4">Spauskite mygtuka — adresas ir suma jau uzpildyti. Jums tereikia pasirinkti mokejimo buda ir apmoketi.</p>
+                  <p className="text-emerald-100 text-base font-bold text-center mb-2">Nupirkite SOL per Onramper</p>
+                  <p className="text-white/60 text-sm text-center mb-4">Spauskite mygtuka — adresas ir suma jau uzpildyti. Pasirinkite mokejimo buda (kortele, bankas, Apple Pay) ir apmokekite.</p>
                   <a
-                    href={`https://onramp.money/main/buy/?appId=1&coinCode=sol&network=solana&walletAddress=${depositAddress}`}
+                    href={`https://buy.onramper.com/?mode=buy&defaultFiat=EUR&defaultAmount=${Math.ceil(successTotalWithFee * 100) / 100}&defaultCrypto=sol_solana&onlyCryptos=sol_solana&onlyCryptoNetworks=solana&networkWallets=SOLANA:${depositAddress}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center justify-center gap-3 w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold py-5 px-6 rounded-xl transition-all text-lg shadow-lg shadow-emerald-900/40 animate-pulse hover:animate-none"
                   >
-                    <svg viewBox="0 0 128 128" className="w-6 h-6 shrink-0" fill="none">
-                      <path d="M52 58L64 46L76 58" stroke="white" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M64 46V82" stroke="white" strokeWidth="8" strokeLinecap="round"/>
+                    <svg viewBox="0 0 24 24" className="w-6 h-6 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
                     </svg>
-                    Pirkti {snapshotSolAmount} SOL — {successTotalWithFee.toFixed(2)}€
+                    Pirkti SOL uz {successTotalWithFee.toFixed(2)}€
                   </a>
-                  <p className="text-white/40 text-xs text-center mt-2">Onramp.money — SEPA / kortele / Apple Pay</p>
+                  <p className="text-white/40 text-xs text-center mt-2">Onramper — SEPA / kortele / Apple Pay / Google Pay</p>
                 </div>
               )}
 
