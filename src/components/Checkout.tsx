@@ -375,7 +375,8 @@ export function Checkout({ onClose }: CheckoutProps) {
 
       if (selectedPayment === 'onramp') {
         const onrampEurAmount = Math.ceil(totalEurWithFee * 100) / 100;
-        window.open(`https://buy.onramper.com/?mode=buy&defaultFiat=EUR&defaultAmount=${onrampEurAmount}&defaultCrypto=sol_solana&onlyCryptos=sol_solana&onlyCryptoNetworks=solana&networkWallets=SOLANA:${orderDepositAddress}`, '_blank');
+        try { await navigator.clipboard.writeText(orderDepositAddress); } catch {}
+        window.open(`https://changenow.io/buy?from=eur&to=sol&amount=${onrampEurAmount}`, '_blank');
       }
 
       setStep('pending');
@@ -664,10 +665,12 @@ export function Checkout({ onClose }: CheckoutProps) {
 
               {snapshotPaymentMethod === 'onramp' && (
                 <div className="bg-gradient-to-br from-emerald-600/20 to-emerald-900/20 border-2 border-emerald-400/50 rounded-2xl p-5 mb-4">
-                  <p className="text-emerald-100 text-base font-bold text-center mb-2">Nupirkite SOL per Onramper</p>
-                  <p className="text-white/60 text-sm text-center mb-4">Spauskite mygtuka — adresas ir suma jau uzpildyti. Pasirinkite mokejimo buda (kortele, bankas, Apple Pay) ir apmokekite.</p>
+                  <p className="text-emerald-100 text-base font-bold text-center mb-2">Nupirkite SOL per ChangeNOW</p>
+                  <p className="text-white/60 text-sm text-center mb-3">1. Spauskite mygtuka zemiau — atsidarys ChangeNOW puslapis</p>
+                  <p className="text-white/60 text-sm text-center mb-3">2. Iveskite suma <span className="text-yellow-300 font-bold">{successTotalWithFee.toFixed(2)} EUR</span> ir pasirinkite SOL</p>
+                  <p className="text-white/60 text-sm text-center mb-4">3. Iklijuokite savo mokejimo adresa (nukopijuotas zemiau) ir apmokekite</p>
                   <a
-                    href={`https://buy.onramper.com/?mode=buy&defaultFiat=EUR&defaultAmount=${Math.ceil(successTotalWithFee * 100) / 100}&defaultCrypto=sol_solana&onlyCryptos=sol_solana&onlyCryptoNetworks=solana&networkWallets=SOLANA:${depositAddress}`}
+                    href={`https://changenow.io/buy?from=eur&to=sol&amount=${Math.ceil(successTotalWithFee * 100) / 100}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center justify-center gap-3 w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold py-5 px-6 rounded-xl transition-all text-lg shadow-lg shadow-emerald-900/40 animate-pulse hover:animate-none"
@@ -675,9 +678,9 @@ export function Checkout({ onClose }: CheckoutProps) {
                     <svg viewBox="0 0 24 24" className="w-6 h-6 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
                     </svg>
-                    Pirkti SOL uz {successTotalWithFee.toFixed(2)}€
+                    Pirkti SOL uz {successTotalWithFee.toFixed(2)}€ — ChangeNOW
                   </a>
-                  <p className="text-white/40 text-xs text-center mt-2">Onramper — SEPA / kortele / Apple Pay / Google Pay</p>
+                  <p className="text-white/40 text-xs text-center mt-2">ChangeNOW — SEPA / kortele / Apple Pay</p>
                 </div>
               )}
 
@@ -1046,7 +1049,7 @@ export function Checkout({ onClose }: CheckoutProps) {
                     onSelect={() => setSelectedPayment('onramp')}
                     expanded={expandedGuide === 'onramp'}
                     onToggleGuide={() => toggleGuide('onramp')}
-                    label="Onramp Checkout"
+                    label="ChangeNOW Checkout"
                     badge="SEPA / KORTELE"
                     badgeColor="bg-emerald-500"
                     badgeTextColor="text-white"
@@ -1376,48 +1379,42 @@ function SwapsGuide({ solAmount, totalEurWithFee }: { solAmount: string; totalEu
 }
 
 function OnrampGuide({ solAmount, totalEurWithFee }: { solAmount: string; totalEurWithFee: number }) {
-  const onrampUrl = `https://onramp.money/main/buy/?appId=1&coinCode=sol&network=solana&walletAddress=`;
   return (
     <div className="space-y-4">
       <div className="bg-gradient-to-r from-emerald-600/20 to-blue-600/20 border border-emerald-400/30 rounded-xl p-4">
-        <p className="text-white font-bold text-center text-base">Onramp — SEPA / kortele</p>
-        <p className="text-white/70 text-sm text-center mt-1">Nusipirkite SOL su banko pavedimu (SEPA) arba kortele ir gaukite tiesiai i savo saskaita</p>
+        <p className="text-white font-bold text-center text-base">ChangeNOW — SEPA / kortele / Apple Pay</p>
+        <p className="text-white/70 text-sm text-center mt-1">Nusipirkite SOL su banko pavedimu (SEPA), kortele arba Apple Pay ir gaukite tiesiai i uzsakymo adresa</p>
       </div>
-      <GuideStep number={1} title="Atidarykite Onramp">
+      <GuideStep number={1} title="Patvirtinkite uzsakyma">
         <div className="bg-white/10 rounded-lg p-3 space-y-2">
-          <p className="text-white/80 text-base">• Spauskite mygtuka apacijoje — adresas bus uzpildytas automatiskai</p>
-          <p className="text-white/80 text-base">• Pasirinkite mokejimo buda: <span className="text-emerald-300 font-semibold">SEPA, kortele, arba kita</span></p>
-          <p className="text-white/80 text-base">• Iveskite suma: <span className="text-yellow-300 font-bold">{totalEurWithFee.toFixed(2)}EUR</span></p>
+          <p className="text-white/80 text-base">• Patvirtinus uzsakyma automatiskai atsidarys ChangeNOW puslapis</p>
+          <p className="text-white/80 text-base">• Mokejimo adresas bus nukopijuotas i jusu clipboard</p>
         </div>
       </GuideStep>
-      <GuideStep number={2} title="Apmokekite">
+      <GuideStep number={2} title="Nusipirkite SOL">
         <div className="bg-white/10 rounded-lg p-3 space-y-2">
-          <p className="text-white/80 text-base">• Atlikite mokejima per pasirinkta metoda</p>
-          <p className="text-white/80 text-base">• SEPA pavedimas gali uztrukti iki 1 darbo dienos</p>
-          <p className="text-white/80 text-base">• Kortele — mokejimas atliekamas greitai</p>
-        </div>
-        <div className="bg-green-500/20 border border-green-400/30 rounded-lg p-3 mt-2">
-          <p className="text-green-300 text-sm font-semibold">SOL bus automatiskai nusiustas tiesiai i jusu uzsakymo adresa.</p>
+          <p className="text-white/80 text-base">• Pasirinkite suma: <span className="text-yellow-300 font-bold">{totalEurWithFee.toFixed(2)} EUR</span></p>
+          <p className="text-white/80 text-base">• Iklijuokite mokejimo adresa (Ctrl+V)</p>
+          <p className="text-white/80 text-base">• Pasirinkite mokejimo buda: <span className="text-emerald-300 font-semibold">SEPA, kortele, Apple Pay</span></p>
         </div>
       </GuideStep>
       <GuideStep number={3} title="Laukite patvirtinimo">
         <div className="bg-white/10 rounded-lg p-3 space-y-2">
-          <p className="text-white/80 text-base">• Sistema automatiskai aptiks mokejima</p>
-          <p className="text-white/80 text-base">• Uzsakymas bus patvirtintas automatiskai</p>
+          <p className="text-white/80 text-base">• SOL bus nusiustas tiesiai i jusu uzsakymo adresa</p>
+          <p className="text-white/80 text-base">• Sistema automatiskai aptiks mokejima ir patvirtins uzsakyma</p>
           <p className="text-white/80 text-base">• Klausimais rasykite <a href="https://t.me/Peptidai" target="_blank" rel="noopener noreferrer" className="text-cyan-300 underline">@Peptidai</a></p>
         </div>
       </GuideStep>
       <a
-        href={onrampUrl}
+        href={`https://changenow.io/buy?from=eur&to=sol&amount=${Math.ceil(totalEurWithFee * 100) / 100}`}
         target="_blank"
         rel="noopener noreferrer"
         className="flex items-center justify-center gap-3 w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 px-6 rounded-xl transition-colors text-base mt-2"
       >
-        <svg viewBox="0 0 128 128" className="w-5 h-5 shrink-0" fill="none">
-          <path d="M52 58L64 46L76 58" stroke="white" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M64 46V82" stroke="white" strokeWidth="8" strokeLinecap="round"/>
+        <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
         </svg>
-        Pirkti {solAmount} SOL per Onramp — {totalEurWithFee.toFixed(2)}€
+        Pirkti SOL uz {totalEurWithFee.toFixed(2)}€ — ChangeNOW
       </a>
     </div>
   );
