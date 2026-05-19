@@ -65,7 +65,9 @@ export function Checkout({ onClose }: CheckoutProps) {
   const totalEurWithFee = discountedTotal + shippingFee;
   const activeSolPrice = lockedSolPrice ?? solPrice;
   const baseSolAmount = parseFloat((totalEurWithFee / activeSolPrice).toFixed(4));
-  const solAmount = (baseSolAmount + uniqueSolOffset).toFixed(4);
+  const solAmount = selectedPayment === 'onramp'
+    ? (totalEurWithFee / activeSolPrice).toFixed(2)
+    : (baseSolAmount + uniqueSolOffset).toFixed(4);
 
   useEffect(() => {
     let active = true;
