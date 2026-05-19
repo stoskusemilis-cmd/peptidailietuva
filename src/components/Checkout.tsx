@@ -8,7 +8,7 @@ interface CheckoutProps {
   onClose: () => void;
 }
 
-type PaymentMethod = 'swaps' | 'paybis' | 'phantom' | 'trust' | 'revolut' | null;
+type PaymentMethod = 'onramp' | 'swaps' | 'paybis' | 'phantom' | 'trust' | 'revolut' | null;
 type Step = 'info' | 'payment' | 'pending' | 'success';
 
 export function Checkout({ onClose }: CheckoutProps) {
@@ -720,6 +720,21 @@ export function Checkout({ onClose }: CheckoutProps) {
                     Mokėti kortele per Paybis — {successTotalWithFee.toFixed(2)}€
                   </a>
                 )}
+
+                {snapshotPaymentMethod === 'onramp' && (
+                  <a
+                    href={`https://onramp.money/main/buy/?appId=1&coinCode=sol&network=solana&walletAddress=${depositAddress}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-3 w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 px-6 rounded-xl transition-colors text-base mt-1"
+                  >
+                    <svg viewBox="0 0 128 128" className="w-5 h-5 shrink-0" fill="none">
+                      <path d="M52 58L64 46L76 58" stroke="white" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M64 46V82" stroke="white" strokeWidth="8" strokeLinecap="round"/>
+                    </svg>
+                    Pirkti SOL per Onramp — {successTotalWithFee.toFixed(2)}€
+                  </a>
+                )}
               </div>
             </div>
 
@@ -1015,6 +1030,29 @@ export function Checkout({ onClose }: CheckoutProps) {
                 <h3 className="text-lg font-bold text-white mb-3">{t('checkoutPayment')}</h3>
 
                 <div className="space-y-3">
+                  <PaymentOption
+                    id="onramp"
+                    selected={selectedPayment === 'onramp'}
+                    onSelect={() => setSelectedPayment('onramp')}
+                    expanded={expandedGuide === 'onramp'}
+                    onToggleGuide={() => toggleGuide('onramp')}
+                    label="Onramp Checkout"
+                    badge="SEPA / KORTELE"
+                    badgeColor="bg-emerald-500"
+                    badgeTextColor="text-white"
+                    howLabel={t('howTo')}
+                    icon={
+                      <svg viewBox="0 0 128 128" className="w-8 h-8" fill="none">
+                        <rect width="128" height="128" rx="26" fill="#0D1B2A"/>
+                        <path d="M38 64C38 49.64 49.64 38 64 38C78.36 38 90 49.64 90 64C90 78.36 78.36 90 64 90C49.64 90 38 78.36 38 64Z" fill="#2C5BFF" fillOpacity="0.2"/>
+                        <path d="M52 58L64 46L76 58" stroke="#2C5BFF" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M64 46V82" stroke="#2C5BFF" strokeWidth="6" strokeLinecap="round"/>
+                        <path d="M44 72C44 78.627 49.373 84 56 84H72C78.627 84 84 78.627 84 72" stroke="#5495FF" strokeWidth="5" strokeLinecap="round"/>
+                      </svg>
+                    }
+                    guide={<OnrampGuide solAmount={solAmount} totalEurWithFee={totalEurWithFee} />}
+                  />
+
                   <PaymentOption
                     id="swaps"
                     selected={selectedPayment === 'swaps'}
@@ -1322,6 +1360,54 @@ function SwapsGuide({ solAmount, totalEurWithFee }: { solAmount: string; totalEu
           <path d="M32 48C32 48 40 72 64 72C88 72 96 96 96 96" stroke="white" strokeWidth="10" strokeLinecap="round" strokeOpacity="0.6"/>
         </svg>
         {t('guideSwapsBtn').replace('{amount}', solAmount)}
+      </a>
+    </div>
+  );
+}
+
+function OnrampGuide({ solAmount, totalEurWithFee }: { solAmount: string; totalEurWithFee: number }) {
+  const onrampUrl = `https://onramp.money/main/buy/?appId=1&coinCode=sol&network=solana&walletAddress=`;
+  return (
+    <div className="space-y-4">
+      <div className="bg-gradient-to-r from-emerald-600/20 to-blue-600/20 border border-emerald-400/30 rounded-xl p-4">
+        <p className="text-white font-bold text-center text-base">Onramp — SEPA / kortele</p>
+        <p className="text-white/70 text-sm text-center mt-1">Nusipirkite SOL su banko pavedimu (SEPA) arba kortele ir gaukite tiesiai i savo saskaita</p>
+      </div>
+      <GuideStep number={1} title="Atidarykite Onramp">
+        <div className="bg-white/10 rounded-lg p-3 space-y-2">
+          <p className="text-white/80 text-base">• Spauskite mygtuka apacijoje — adresas bus uzpildytas automatiskai</p>
+          <p className="text-white/80 text-base">• Pasirinkite mokejimo buda: <span className="text-emerald-300 font-semibold">SEPA, kortele, arba kita</span></p>
+          <p className="text-white/80 text-base">• Iveskite suma: <span className="text-yellow-300 font-bold">{totalEurWithFee.toFixed(2)}EUR</span></p>
+        </div>
+      </GuideStep>
+      <GuideStep number={2} title="Apmokekite">
+        <div className="bg-white/10 rounded-lg p-3 space-y-2">
+          <p className="text-white/80 text-base">• Atlikite mokejima per pasirinkta metoda</p>
+          <p className="text-white/80 text-base">• SEPA pavedimas gali uztrukti iki 1 darbo dienos</p>
+          <p className="text-white/80 text-base">• Kortele — mokejimas atliekamas greitai</p>
+        </div>
+        <div className="bg-green-500/20 border border-green-400/30 rounded-lg p-3 mt-2">
+          <p className="text-green-300 text-sm font-semibold">SOL bus automatiskai nusiustas tiesiai i jusu uzsakymo adresa.</p>
+        </div>
+      </GuideStep>
+      <GuideStep number={3} title="Laukite patvirtinimo">
+        <div className="bg-white/10 rounded-lg p-3 space-y-2">
+          <p className="text-white/80 text-base">• Sistema automatiskai aptiks mokejima</p>
+          <p className="text-white/80 text-base">• Uzsakymas bus patvirtintas automatiskai</p>
+          <p className="text-white/80 text-base">• Klausimais rasykite <a href="https://t.me/Peptidai" target="_blank" rel="noopener noreferrer" className="text-cyan-300 underline">@Peptidai</a></p>
+        </div>
+      </GuideStep>
+      <a
+        href={onrampUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center justify-center gap-3 w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 px-6 rounded-xl transition-colors text-base mt-2"
+      >
+        <svg viewBox="0 0 128 128" className="w-5 h-5 shrink-0" fill="none">
+          <path d="M52 58L64 46L76 58" stroke="white" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M64 46V82" stroke="white" strokeWidth="8" strokeLinecap="round"/>
+        </svg>
+        Pirkti {solAmount} SOL per Onramp — {totalEurWithFee.toFixed(2)}€
       </a>
     </div>
   );
