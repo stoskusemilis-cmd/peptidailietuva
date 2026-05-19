@@ -373,6 +373,10 @@ export function Checkout({ onClose }: CheckoutProps) {
       setOrderId(order.id);
       clearCart();
 
+      if (selectedPayment === 'onramp') {
+        window.open(`https://onramp.money/main/buy/?appId=1&coinCode=sol&network=solana&walletAddress=${orderDepositAddress}`, '_blank');
+      }
+
       setStep('pending');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : (typeof err === 'object' && err !== null && 'message' in err ? String((err as {message: unknown}).message) : String(err));
@@ -657,6 +661,26 @@ export function Checkout({ onClose }: CheckoutProps) {
                 </p>
               </div>
 
+              {snapshotPaymentMethod === 'onramp' && (
+                <div className="bg-gradient-to-br from-emerald-600/20 to-emerald-900/20 border-2 border-emerald-400/50 rounded-2xl p-5 mb-4">
+                  <p className="text-emerald-100 text-base font-bold text-center mb-2">Nupirkite SOL per Onramp</p>
+                  <p className="text-white/60 text-sm text-center mb-4">Spauskite mygtuka — adresas ir suma jau uzpildyti. Jums tereikia pasirinkti mokejimo buda ir apmoketi.</p>
+                  <a
+                    href={`https://onramp.money/main/buy/?appId=1&coinCode=sol&network=solana&walletAddress=${depositAddress}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-3 w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold py-5 px-6 rounded-xl transition-all text-lg shadow-lg shadow-emerald-900/40 animate-pulse hover:animate-none"
+                  >
+                    <svg viewBox="0 0 128 128" className="w-6 h-6 shrink-0" fill="none">
+                      <path d="M52 58L64 46L76 58" stroke="white" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M64 46V82" stroke="white" strokeWidth="8" strokeLinecap="round"/>
+                    </svg>
+                    Pirkti {snapshotSolAmount} SOL — {successTotalWithFee.toFixed(2)}€
+                  </a>
+                  <p className="text-white/40 text-xs text-center mt-2">Onramp.money — SEPA / kortele / Apple Pay</p>
+                </div>
+              )}
+
               <div className="space-y-3">
                 <div>
                   <p className="text-white/50 text-xs mb-1.5 font-medium">{t('exactSendAmount')}</p>
@@ -721,24 +745,6 @@ export function Checkout({ onClose }: CheckoutProps) {
                   </a>
                 )}
 
-                {snapshotPaymentMethod === 'onramp' && (
-                  <div className="mt-3 bg-gradient-to-br from-emerald-600/20 to-blue-600/20 border-2 border-emerald-400/40 rounded-2xl p-5">
-                    <p className="text-emerald-200 text-sm font-semibold text-center mb-3">Spauskite mygtuka ir nupirkite SOL — adresas jau uzpildytas automatiskai</p>
-                    <a
-                      href={`https://onramp.money/main/buy/?appId=1&coinCode=sol&network=solana&walletAddress=${depositAddress}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-3 w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold py-5 px-6 rounded-xl transition-all text-lg shadow-lg shadow-emerald-900/30"
-                    >
-                      <svg viewBox="0 0 128 128" className="w-6 h-6 shrink-0" fill="none">
-                        <path d="M52 58L64 46L76 58" stroke="white" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round"/>
-                        <path d="M64 46V82" stroke="white" strokeWidth="8" strokeLinecap="round"/>
-                      </svg>
-                      Pirkti {snapshotSolAmount} SOL — {successTotalWithFee.toFixed(2)}€
-                    </a>
-                    <p className="text-white/50 text-xs text-center mt-2">Onramp.money — SEPA / kortele / kiti budai</p>
-                  </div>
-                )}
               </div>
             </div>
 
