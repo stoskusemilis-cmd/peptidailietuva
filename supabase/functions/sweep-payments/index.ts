@@ -65,7 +65,7 @@ Deno.serve(async (req: Request) => {
 
     const query = supabase
       .from("orders")
-      .select("id, order_number, deposit_address, derivation_index, crypto_amount, payment_status, swept_at, created_at")
+      .select("id, order_number, deposit_address, derivation_index, crypto_amount, payment_status, swept_at, created_at, shipping_address")
       .not("deposit_address", "is", null)
       .is("swept_at", null)
       .gte("created_at", new Date(Date.now() - 1000 * 60 * 60 * 72).toISOString());
@@ -93,7 +93,12 @@ Deno.serve(async (req: Request) => {
           continue;
         }
 
-        const isFullyPaid = balance + 5000 >= expectedLamports;
+        const isChangeNow = (order as Record<string, unknown>).shipping_address &&
+          typeof (order as Record<string, unknown>).shipping_address === "object" &&
+          ((order as Record<string, unknown>).shipping_address as Record<string, unknown>)?.payment_method === "onramp";
+        const isFullyPaid = isChangeNow
+          ? balance > TOTAL_TX_FEE_LAMPORTS
+          : balance + 5000 >= expectedLamports;
 
         if (isFullyPaid && order.payment_status !== "confirmed" && order.payment_status !== "paid") {
           const sigs = await connection.getSignaturesForAddress(depositPubkey, { limit: 1 });

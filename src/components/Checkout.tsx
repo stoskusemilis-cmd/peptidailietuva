@@ -58,6 +58,7 @@ export function Checkout({ onClose }: CheckoutProps) {
 
   const SHIPPING_FEE_EUR = 3.5;
   const FREE_SHIPPING_THRESHOLD = 50;
+  const CHANGENOW_FEE_PERCENT = 0.03;
   const totalEur = getTotalPrice();
   const discountAmount = appliedDiscount ? parseFloat((totalEur * appliedDiscount.percent / 100).toFixed(2)) : 0;
   const discountedTotal = totalEur - discountAmount;
@@ -374,7 +375,7 @@ export function Checkout({ onClose }: CheckoutProps) {
       clearCart();
 
       if (selectedPayment === 'onramp') {
-        const onrampEurAmount = Math.ceil(totalEurWithFee * 100) / 100;
+        const onrampEurAmount = Math.ceil(totalEurWithFee * (1 + CHANGENOW_FEE_PERCENT) * 100) / 100;
         try { await navigator.clipboard.writeText(orderDepositAddress); } catch {}
         window.open(`https://changenow.io/buy?from=eur&to=sol&amount=${onrampEurAmount}`, '_blank');
       }
@@ -425,42 +426,90 @@ export function Checkout({ onClose }: CheckoutProps) {
             <div className="bg-gradient-to-br from-[#0d2137] to-[#0a1929] border-2 border-cyan-400/40 rounded-2xl p-5 mb-4 text-left">
               <p className="text-white/60 text-xs font-semibold uppercase tracking-widest mb-3 text-center">{t('pendingSend')}</p>
 
-              <div className="mb-4">
-                <p className="text-white/50 text-xs mb-1">{t('pendingExact')}</p>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 bg-black/40 border border-cyan-400/30 rounded-xl px-4 py-3">
-                    <span className="text-2xl font-black text-cyan-300 font-mono tracking-tight">{snapshotSolAmount} SOL</span>
-                    <span className="text-white/40 text-sm ml-2">≈ {pendingTotalWithFee}€</span>
+              {snapshotPaymentMethod === 'onramp' ? (
+                <>
+                  <div className="mb-4">
+                    <p className="text-white/50 text-xs mb-1">{t('pendingEurAmount')}</p>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 bg-black/40 border border-emerald-400/30 rounded-xl px-4 py-3">
+                        <span className="text-2xl font-black text-emerald-300 font-mono tracking-tight">{(parseFloat(pendingTotalWithFee) * (1 + CHANGENOW_FEE_PERCENT)).toFixed(2)}€</span>
+                        <span className="text-white/40 text-sm ml-2">({pendingTotalWithFee}€ + 3% fee)</span>
+                      </div>
+                    </div>
                   </div>
-                  <button
-                    onClick={() => copyToClipboard(snapshotSolAmount, 'sol')}
-                    className={`flex flex-col items-center gap-1 px-3 py-3 rounded-xl transition-all font-semibold text-xs shrink-0 min-w-[64px] ${copySuccess === 'sol' ? 'bg-green-500 text-white' : 'bg-cyan-600 hover:bg-cyan-500 text-white'}`}
-                  >
-                    {copySuccess === 'sol' ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
-                    {copySuccess === 'sol' ? t('pendingCopied') : t('pendingCopy')}
-                  </button>
-                </div>
-              </div>
 
-              <div>
-                <p className="text-white/50 text-xs mb-1">{t('pendingAddress')}</p>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 bg-black/40 border border-white/20 rounded-xl px-3 py-3 min-w-0">
-                    <p className="text-xs font-mono text-white/80 break-all leading-relaxed">{depositAddress}</p>
+                  <div className="mb-4">
+                    <p className="text-white/50 text-xs mb-1">{t('pendingAddress')}</p>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 bg-black/40 border border-white/20 rounded-xl px-3 py-3 min-w-0">
+                        <p className="text-xs font-mono text-white/80 break-all leading-relaxed">{depositAddress}</p>
+                      </div>
+                      <button
+                        onClick={() => copyToClipboard(depositAddress, 'address')}
+                        className={`flex flex-col items-center gap-1 px-3 py-3 rounded-xl transition-all font-semibold text-xs shrink-0 min-w-[64px] ${copySuccess === 'address' ? 'bg-green-500 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white'}`}
+                      >
+                        {copySuccess === 'address' ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                        {copySuccess === 'address' ? t('pendingCopied') : t('pendingCopy')}
+                      </button>
+                    </div>
                   </div>
-                  <button
-                    onClick={() => copyToClipboard(depositAddress, 'address')}
-                    className={`flex flex-col items-center gap-1 px-3 py-3 rounded-xl transition-all font-semibold text-xs shrink-0 min-w-[64px] ${copySuccess === 'address' ? 'bg-green-500 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white'}`}
-                  >
-                    {copySuccess === 'address' ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
-                    {copySuccess === 'address' ? t('pendingCopied') : t('pendingCopy')}
-                  </button>
-                </div>
-              </div>
 
-              <div className="mt-3 bg-red-500/15 border border-red-400/40 rounded-xl p-3">
-                <p className="text-red-200 text-xs font-bold text-center">{t('exactSolWarning')}</p>
-              </div>
+                  <a
+                    href={`https://changenow.io/buy?from=eur&to=sol&amount=${(parseFloat(pendingTotalWithFee) * (1 + CHANGENOW_FEE_PERCENT)).toFixed(2)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-3 w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold py-4 px-5 rounded-xl transition-all text-base shadow-lg shadow-emerald-900/40 animate-pulse hover:animate-none"
+                  >
+                    <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                    </svg>
+                    {t('pendingBuyChangeNow').replace('{amount}', (parseFloat(pendingTotalWithFee) * (1 + CHANGENOW_FEE_PERCENT)).toFixed(2))}
+                  </a>
+
+                  <div className="mt-3 bg-emerald-500/10 border border-emerald-400/30 rounded-xl p-3">
+                    <p className="text-emerald-200 text-xs text-center">{t('changeNowAutoNote')}</p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="mb-4">
+                    <p className="text-white/50 text-xs mb-1">{t('pendingExact')}</p>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 bg-black/40 border border-cyan-400/30 rounded-xl px-4 py-3">
+                        <span className="text-2xl font-black text-cyan-300 font-mono tracking-tight">{snapshotSolAmount} SOL</span>
+                        <span className="text-white/40 text-sm ml-2">≈ {pendingTotalWithFee}€</span>
+                      </div>
+                      <button
+                        onClick={() => copyToClipboard(snapshotSolAmount, 'sol')}
+                        className={`flex flex-col items-center gap-1 px-3 py-3 rounded-xl transition-all font-semibold text-xs shrink-0 min-w-[64px] ${copySuccess === 'sol' ? 'bg-green-500 text-white' : 'bg-cyan-600 hover:bg-cyan-500 text-white'}`}
+                      >
+                        {copySuccess === 'sol' ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                        {copySuccess === 'sol' ? t('pendingCopied') : t('pendingCopy')}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-white/50 text-xs mb-1">{t('pendingAddress')}</p>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 bg-black/40 border border-white/20 rounded-xl px-3 py-3 min-w-0">
+                        <p className="text-xs font-mono text-white/80 break-all leading-relaxed">{depositAddress}</p>
+                      </div>
+                      <button
+                        onClick={() => copyToClipboard(depositAddress, 'address')}
+                        className={`flex flex-col items-center gap-1 px-3 py-3 rounded-xl transition-all font-semibold text-xs shrink-0 min-w-[64px] ${copySuccess === 'address' ? 'bg-green-500 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white'}`}
+                      >
+                        {copySuccess === 'address' ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                        {copySuccess === 'address' ? t('pendingCopied') : t('pendingCopy')}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 bg-red-500/15 border border-red-400/40 rounded-xl p-3">
+                    <p className="text-red-200 text-xs font-bold text-center">{t('exactSolWarning')}</p>
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="bg-yellow-500/10 border border-yellow-400/20 rounded-xl p-4 mb-4">
@@ -567,13 +616,19 @@ export function Checkout({ onClose }: CheckoutProps) {
                         {snapshotShippingFee > 0 ? `+${snapshotShippingFee.toFixed(2)}€` : t('cartFree')}
                       </span>
                     </div>
-                    <div className="flex justify-between gap-3 py-2.5">
-                      <span className="text-white/70 font-semibold shrink-0">{t('successPaymentAmount')}</span>
-                      <span className="font-bold text-cyan-300 font-mono text-right">{snapshotSolAmount} SOL</span>
-                    </div>
+                    {snapshotPaymentMethod !== 'onramp' && (
+                      <div className="flex justify-between gap-3 py-2.5">
+                        <span className="text-white/70 font-semibold shrink-0">{t('successPaymentAmount')}</span>
+                        <span className="font-bold text-cyan-300 font-mono text-right">{snapshotSolAmount} SOL</span>
+                      </div>
+                    )}
                     <div className="flex justify-between gap-3 py-2.5">
                       <span className="text-white font-bold shrink-0">{t('successTotalPaid')}</span>
-                      <span className="font-bold text-white text-lg">{successTotalWithFee.toFixed(2)}€</span>
+                      <span className="font-bold text-white text-lg">
+                        {snapshotPaymentMethod === 'onramp'
+                          ? `${(successTotalWithFee * (1 + CHANGENOW_FEE_PERCENT)).toFixed(2)}€`
+                          : `${successTotalWithFee.toFixed(2)}€`}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -652,109 +707,148 @@ export function Checkout({ onClose }: CheckoutProps) {
                 <p className="text-blue-100 text-base sm:text-xl font-bold">{t('successMakePayment')}</p>
               </div>
 
-              <div className="bg-white/10 rounded-lg p-4 mb-4">
-                <p className="text-base text-white/60 mb-2">{t('successPaymentAmount')}</p>
-                <p className="text-3xl font-bold text-white mb-1">{snapshotSolAmount} SOL</p>
-                <p className="text-base text-white/60">
-                  ≈ {successTotalWithFee.toFixed(2)}€
-                  {snapshotShippingFee > 0
-                    ? <> ({t('checkoutProducts')} {snapshotTotalEur.toFixed(2)}€ + {t('checkoutShipping')} {snapshotShippingFee.toFixed(2)}€)</>
-                    : <> ({t('checkoutProducts')} {snapshotTotalEur.toFixed(2)}€ + {t('cartFree')})</>}
-                </p>
-              </div>
+              {snapshotPaymentMethod === 'onramp' ? (
+                <>
+                  <div className="bg-white/10 rounded-lg p-4 mb-4">
+                    <p className="text-base text-white/60 mb-2">{t('successPaymentAmount')}</p>
+                    <p className="text-3xl font-bold text-emerald-300 mb-1">{(successTotalWithFee * (1 + CHANGENOW_FEE_PERCENT)).toFixed(2)}€</p>
+                    <p className="text-base text-white/60">
+                      {successTotalWithFee.toFixed(2)}€ + 3% ChangeNow fee
+                    </p>
+                  </div>
 
-              {snapshotPaymentMethod === 'onramp' && (
-                <div className="bg-gradient-to-br from-emerald-600/20 to-emerald-900/20 border-2 border-emerald-400/50 rounded-2xl p-5 mb-4">
-                  <p className="text-emerald-100 text-base font-bold text-center mb-2">Nupirkite SOL per ChangeNOW</p>
-                  <p className="text-white/60 text-sm text-center mb-3">1. Spauskite mygtuka zemiau — atsidarys ChangeNOW puslapis</p>
-                  <p className="text-white/60 text-sm text-center mb-3">2. Iveskite suma <span className="text-yellow-300 font-bold">{successTotalWithFee.toFixed(2)} EUR</span> ir pasirinkite SOL</p>
-                  <p className="text-white/60 text-sm text-center mb-4">3. Iklijuokite savo mokejimo adresa (nukopijuotas zemiau) ir apmokekite</p>
-                  <a
-                    href={`https://changenow.io/buy?from=eur&to=sol&amount=${Math.ceil(successTotalWithFee * 100) / 100}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-3 w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold py-5 px-6 rounded-xl transition-all text-lg shadow-lg shadow-emerald-900/40 animate-pulse hover:animate-none"
-                  >
-                    <svg viewBox="0 0 24 24" className="w-6 h-6 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-                    </svg>
-                    Pirkti SOL uz {successTotalWithFee.toFixed(2)}€ — ChangeNOW
-                  </a>
-                  <p className="text-white/40 text-xs text-center mt-2">ChangeNOW — SEPA / kortele / Apple Pay</p>
-                </div>
+                  <div className="bg-gradient-to-br from-emerald-600/20 to-emerald-900/20 border-2 border-emerald-400/50 rounded-2xl p-5 mb-4">
+                    <p className="text-emerald-100 text-base font-bold text-center mb-2">{t('changeNowBuyTitle')}</p>
+                    <p className="text-white/60 text-sm text-center mb-3">1. {t('changeNowStep1')}</p>
+                    <p className="text-white/60 text-sm text-center mb-3">2. {t('changeNowStep2').replace('{amount}', (successTotalWithFee * (1 + CHANGENOW_FEE_PERCENT)).toFixed(2))}</p>
+                    <p className="text-white/60 text-sm text-center mb-4">3. {t('changeNowStep3')}</p>
+                    <a
+                      href={`https://changenow.io/buy?from=eur&to=sol&amount=${(successTotalWithFee * (1 + CHANGENOW_FEE_PERCENT)).toFixed(2)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-3 w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold py-5 px-6 rounded-xl transition-all text-lg shadow-lg shadow-emerald-900/40 animate-pulse hover:animate-none"
+                    >
+                      <svg viewBox="0 0 24 24" className="w-6 h-6 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                      </svg>
+                      {t('pendingBuyChangeNow').replace('{amount}', (successTotalWithFee * (1 + CHANGENOW_FEE_PERCENT)).toFixed(2))}
+                    </a>
+                    <p className="text-white/40 text-xs text-center mt-2">ChangeNOW — SEPA / kortele / Apple Pay</p>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-white/50 text-xs mb-1.5 font-medium">{t('sendToAddress')}</p>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 bg-black/40 border border-white/20 rounded-xl px-3 py-3 min-w-0">
+                          <p className="text-xs font-mono text-white/80 break-all leading-relaxed">{depositAddress}</p>
+                        </div>
+                        <button
+                          onClick={() => copyToClipboard(depositAddress, 'address')}
+                          className={`flex flex-col items-center gap-1 px-3 py-3 rounded-xl transition-all font-semibold text-xs shrink-0 min-w-[64px] ${copySuccess === 'address' ? 'bg-green-500 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white'}`}
+                        >
+                          {copySuccess === 'address' ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                          {copySuccess === 'address' ? t('pendingCopied') : t('pendingCopy')}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 bg-emerald-500/10 border border-emerald-400/30 rounded-xl p-3">
+                    <p className="text-emerald-200 text-xs text-center">{t('changeNowAutoNote')}</p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="bg-white/10 rounded-lg p-4 mb-4">
+                    <p className="text-base text-white/60 mb-2">{t('successPaymentAmount')}</p>
+                    <p className="text-3xl font-bold text-white mb-1">{snapshotSolAmount} SOL</p>
+                    <p className="text-base text-white/60">
+                      ≈ {successTotalWithFee.toFixed(2)}€
+                      {snapshotShippingFee > 0
+                        ? <> ({t('checkoutProducts')} {snapshotTotalEur.toFixed(2)}€ + {t('checkoutShipping')} {snapshotShippingFee.toFixed(2)}€)</>
+                        : <> ({t('checkoutProducts')} {snapshotTotalEur.toFixed(2)}€ + {t('cartFree')})</>}
+                    </p>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-white/50 text-xs mb-1.5 font-medium">{t('exactSendAmount')}</p>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 bg-black/40 border border-cyan-400/40 rounded-xl px-4 py-3">
+                          <span className="text-xl font-black text-cyan-300 font-mono">{snapshotSolAmount} SOL</span>
+                          <span className="text-white/40 text-sm ml-2">≈ {successTotalWithFee.toFixed(2)}€</span>
+                        </div>
+                        <button
+                          onClick={() => copyToClipboard(snapshotSolAmount, 'sol')}
+                          className={`flex flex-col items-center gap-1 px-3 py-3 rounded-xl transition-all font-semibold text-xs shrink-0 min-w-[64px] ${copySuccess === 'sol' ? 'bg-green-500 text-white' : 'bg-cyan-600 hover:bg-cyan-500 text-white'}`}
+                        >
+                          {copySuccess === 'sol' ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                          {copySuccess === 'sol' ? t('pendingCopied') : t('pendingCopy')}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <p className="text-white/50 text-xs mb-1.5 font-medium">{t('sendToAddress')}</p>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 bg-black/40 border border-white/20 rounded-xl px-3 py-3 min-w-0">
+                          <p className="text-xs font-mono text-white/80 break-all leading-relaxed">{depositAddress}</p>
+                        </div>
+                        <button
+                          onClick={() => copyToClipboard(depositAddress, 'address')}
+                          className={`flex flex-col items-center gap-1 px-3 py-3 rounded-xl transition-all font-semibold text-xs shrink-0 min-w-[64px] ${copySuccess === 'address' ? 'bg-green-500 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white'}`}
+                        >
+                          {copySuccess === 'address' ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                          {copySuccess === 'address' ? t('pendingCopied') : t('pendingCopy')}
+                        </button>
+                      </div>
+                    </div>
+
+                    {snapshotPaymentMethod === 'swaps' && (
+                      <a
+                        href={`https://www.swaps.app/?side=buy&amount=${snapshotSolAmount}&fiat=EUR&to=SOL%3Asolana&country=LT&method=apple_pay&toAddress=${depositAddress}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-3 w-full bg-cyan-500 hover:bg-cyan-400 text-white font-bold py-4 px-6 rounded-xl transition-colors text-base mt-1"
+                      >
+                        <svg viewBox="0 0 128 128" className="w-5 h-5 shrink-0" fill="none">
+                          <rect width="128" height="128" rx="26" fill="white" fillOpacity="0.2"/>
+                          <path d="M32 80C32 80 40 56 64 56C88 56 96 32 96 32" stroke="white" strokeWidth="10" strokeLinecap="round"/>
+                          <path d="M32 48C32 48 40 72 64 72C88 72 96 96 96 96" stroke="white" strokeWidth="10" strokeLinecap="round" strokeOpacity="0.6"/>
+                        </svg>
+                        {t('successBuySwaps').replace('{amount}', snapshotSolAmount)}
+                      </a>
+                    )}
+
+                    {snapshotPaymentMethod === 'paybis' && (
+                      <a
+                        href={`https://paybis.com/buy-solana/?fromCurrencyCode=EUR&fromAmount=${successTotalWithFee.toFixed(2)}&toCurrencyCode=SOL&toAddress=${depositAddress}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-3 w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-6 rounded-xl transition-colors text-base mt-1"
+                      >
+                        <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" fill="currentColor">
+                          <path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/>
+                        </svg>
+                        Mokėti kortele per Paybis — {successTotalWithFee.toFixed(2)}€
+                      </a>
+                    )}
+                  </div>
+                </>
               )}
-
-              <div className="space-y-3">
-                <div>
-                  <p className="text-white/50 text-xs mb-1.5 font-medium">{t('exactSendAmount')}</p>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 bg-black/40 border border-cyan-400/40 rounded-xl px-4 py-3">
-                      <span className="text-xl font-black text-cyan-300 font-mono">{snapshotSolAmount} SOL</span>
-                      <span className="text-white/40 text-sm ml-2">≈ {successTotalWithFee.toFixed(2)}€</span>
-                    </div>
-                    <button
-                      onClick={() => copyToClipboard(snapshotSolAmount, 'sol')}
-                      className={`flex flex-col items-center gap-1 px-3 py-3 rounded-xl transition-all font-semibold text-xs shrink-0 min-w-[64px] ${copySuccess === 'sol' ? 'bg-green-500 text-white' : 'bg-cyan-600 hover:bg-cyan-500 text-white'}`}
-                    >
-                      {copySuccess === 'sol' ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
-                      {copySuccess === 'sol' ? t('pendingCopied') : t('pendingCopy')}
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <p className="text-white/50 text-xs mb-1.5 font-medium">{t('sendToAddress')}</p>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 bg-black/40 border border-white/20 rounded-xl px-3 py-3 min-w-0">
-                      <p className="text-xs font-mono text-white/80 break-all leading-relaxed">{depositAddress}</p>
-                    </div>
-                    <button
-                      onClick={() => copyToClipboard(depositAddress, 'address')}
-                      className={`flex flex-col items-center gap-1 px-3 py-3 rounded-xl transition-all font-semibold text-xs shrink-0 min-w-[64px] ${copySuccess === 'address' ? 'bg-green-500 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white'}`}
-                    >
-                      {copySuccess === 'address' ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
-                      {copySuccess === 'address' ? t('pendingCopied') : t('pendingCopy')}
-                    </button>
-                  </div>
-                </div>
-
-                {snapshotPaymentMethod === 'swaps' && (
-                  <a
-                    href={`https://www.swaps.app/?side=buy&amount=${snapshotSolAmount}&fiat=EUR&to=SOL%3Asolana&country=LT&method=apple_pay&toAddress=${depositAddress}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-3 w-full bg-cyan-500 hover:bg-cyan-400 text-white font-bold py-4 px-6 rounded-xl transition-colors text-base mt-1"
-                  >
-                    <svg viewBox="0 0 128 128" className="w-5 h-5 shrink-0" fill="none">
-                      <rect width="128" height="128" rx="26" fill="white" fillOpacity="0.2"/>
-                      <path d="M32 80C32 80 40 56 64 56C88 56 96 32 96 32" stroke="white" strokeWidth="10" strokeLinecap="round"/>
-                      <path d="M32 48C32 48 40 72 64 72C88 72 96 96 96 96" stroke="white" strokeWidth="10" strokeLinecap="round" strokeOpacity="0.6"/>
-                    </svg>
-                    {t('successBuySwaps').replace('{amount}', snapshotSolAmount)}
-                  </a>
-                )}
-
-                {snapshotPaymentMethod === 'paybis' && (
-                  <a
-                    href={`https://paybis.com/buy-solana/?fromCurrencyCode=EUR&fromAmount=${successTotalWithFee.toFixed(2)}&toCurrencyCode=SOL&toAddress=${depositAddress}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-3 w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-6 rounded-xl transition-colors text-base mt-1"
-                  >
-                    <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" fill="currentColor">
-                      <path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/>
-                    </svg>
-                    Mokėti kortele per Paybis — {successTotalWithFee.toFixed(2)}€
-                  </a>
-                )}
-
-              </div>
             </div>
 
             <div className="bg-yellow-500/20 border border-yellow-400/30 rounded-xl p-5 mb-6">
               <p className="text-yellow-100 text-base font-semibold mb-2">{t('successImportant')}</p>
               <ul className="text-yellow-100 text-base space-y-2 text-left">
-                {snapshotPaymentMethod === 'swaps' ? (
+                {snapshotPaymentMethod === 'onramp' ? (
+                  <>
+                    <li>• {t('changeNowBullet1').replace('{amount}', (successTotalWithFee * (1 + CHANGENOW_FEE_PERCENT)).toFixed(2))}</li>
+                    <li>• {t('changeNowBullet2')}</li>
+                    <li>• {t('successBullet3')}</li>
+                  </>
+                ) : snapshotPaymentMethod === 'swaps' ? (
                   <>
                     <li>• {t('successBullet1Swaps').replace('{amount}', snapshotSolAmount)}</li>
                     <li>• {t('successBullet2Swaps')}</li>
@@ -979,7 +1073,6 @@ export function Checkout({ onClose }: CheckoutProps) {
                     <span className="text-lg font-semibold text-white">{t('checkoutTotal')}</span>
                     <div className="text-right">
                       <div className="text-2xl font-bold text-white">{totalEurWithFee.toFixed(2)}€</div>
-                      <div className="text-sm text-white/50 font-mono">≈ {solAmount} SOL</div>
                     </div>
                   </div>
                 </div>
@@ -990,7 +1083,6 @@ export function Checkout({ onClose }: CheckoutProps) {
                   <Wallet className="w-6 h-6 text-blue-300 shrink-0" />
                   <div>
                     <p className="text-white font-semibold text-sm">{t('paymentMethodSol')}</p>
-                    <p className="text-blue-200 font-mono text-lg font-bold">{solAmount} SOL</p>
                     <p className="text-white/50 text-xs">{t('exactAmountNote')}</p>
                   </div>
                 </div>
@@ -1033,7 +1125,7 @@ export function Checkout({ onClose }: CheckoutProps) {
                     </div>
                     <div className="flex justify-between text-white font-bold text-lg pt-1 border-t border-white/20">
                       <span>{t('checkoutTotal')}</span>
-                      <span>{totalEurWithFee.toFixed(2)}€ ≈ {solAmount} SOL</span>
+                      <span>{totalEurWithFee.toFixed(2)}€</span>
                     </div>
                   </div>
                 </div>
@@ -1187,48 +1279,64 @@ export function Checkout({ onClose }: CheckoutProps) {
                 </div>
               </div>
 
-              <div className="bg-gradient-to-br from-[#0d2137] to-[#0a1929] border-2 border-cyan-400/30 rounded-2xl p-4">
-                <p className="text-white/50 text-xs font-semibold uppercase tracking-widest mb-3 text-center">{t('paymentInfo')}</p>
-
-                <div className="mb-3">
-                  <p className="text-white/50 text-xs mb-1">{t('exactSendAmount')}</p>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 bg-black/40 border border-cyan-400/30 rounded-xl px-3 py-2.5">
-                      <span className="text-lg font-black text-cyan-300 font-mono">{solAmount} SOL</span>
-                      <span className="text-white/40 text-xs ml-2">≈ {totalEurWithFee.toFixed(2)}€</span>
+              {selectedPayment === 'onramp' ? (
+                <div className="bg-gradient-to-br from-[#0d2137] to-[#0a1929] border-2 border-emerald-400/30 rounded-2xl p-4">
+                  <p className="text-white/50 text-xs font-semibold uppercase tracking-widest mb-3 text-center">{t('paymentInfo')}</p>
+                  <div className="mb-3">
+                    <p className="text-white/50 text-xs mb-1">{t('changeNowEurLabel')}</p>
+                    <div className="flex-1 bg-black/40 border border-emerald-400/30 rounded-xl px-3 py-2.5">
+                      <span className="text-lg font-black text-emerald-300 font-mono">{(totalEurWithFee * (1 + CHANGENOW_FEE_PERCENT)).toFixed(2)}€</span>
+                      <span className="text-white/40 text-xs ml-2">({totalEurWithFee.toFixed(2)}€ + 3% fee)</span>
                     </div>
-                    <button
-                      onClick={() => copyToClipboard(solAmount, 'sol')}
-                      className={`flex flex-col items-center gap-1 px-3 py-2.5 rounded-xl transition-all font-semibold text-xs shrink-0 min-w-[60px] ${copySuccess === 'sol' ? 'bg-green-500 text-white' : 'bg-cyan-600 hover:bg-cyan-500 text-white'}`}
-                    >
-                      {copySuccess === 'sol' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                      {copySuccess === 'sol' ? t('pendingCopied') : t('pendingCopy')}
-                    </button>
                   </div>
+                  <p className="text-emerald-300/70 text-xs mt-2.5 text-center">{t('changeNowAutoNote')}</p>
                 </div>
+              ) : (
+                <>
+                  <div className="bg-gradient-to-br from-[#0d2137] to-[#0a1929] border-2 border-cyan-400/30 rounded-2xl p-4">
+                    <p className="text-white/50 text-xs font-semibold uppercase tracking-widest mb-3 text-center">{t('paymentInfo')}</p>
 
-                <div>
-                  <p className="text-white/50 text-xs mb-1">{t('sendToAddress')}</p>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 bg-black/40 border border-white/20 rounded-xl px-3 py-2.5 min-w-0">
-                      <p className="text-xs font-mono text-white/80 break-all leading-relaxed">{depositAddress}</p>
+                    <div className="mb-3">
+                      <p className="text-white/50 text-xs mb-1">{t('exactSendAmount')}</p>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 bg-black/40 border border-cyan-400/30 rounded-xl px-3 py-2.5">
+                          <span className="text-lg font-black text-cyan-300 font-mono">{solAmount} SOL</span>
+                          <span className="text-white/40 text-xs ml-2">≈ {totalEurWithFee.toFixed(2)}€</span>
+                        </div>
+                        <button
+                          onClick={() => copyToClipboard(solAmount, 'sol')}
+                          className={`flex flex-col items-center gap-1 px-3 py-2.5 rounded-xl transition-all font-semibold text-xs shrink-0 min-w-[60px] ${copySuccess === 'sol' ? 'bg-green-500 text-white' : 'bg-cyan-600 hover:bg-cyan-500 text-white'}`}
+                        >
+                          {copySuccess === 'sol' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                          {copySuccess === 'sol' ? t('pendingCopied') : t('pendingCopy')}
+                        </button>
+                      </div>
                     </div>
-                    <button
-                      onClick={() => copyToClipboard(depositAddress, 'address')}
-                      className={`flex flex-col items-center gap-1 px-3 py-2.5 rounded-xl transition-all font-semibold text-xs shrink-0 min-w-[60px] ${copySuccess === 'address' ? 'bg-green-500 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white'}`}
-                    >
-                      {copySuccess === 'address' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                      {copySuccess === 'address' ? t('pendingCopied') : t('pendingCopy')}
-                    </button>
+
+                    <div>
+                      <p className="text-white/50 text-xs mb-1">{t('sendToAddress')}</p>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 bg-black/40 border border-white/20 rounded-xl px-3 py-2.5 min-w-0">
+                          <p className="text-xs font-mono text-white/80 break-all leading-relaxed">{depositAddress}</p>
+                        </div>
+                        <button
+                          onClick={() => copyToClipboard(depositAddress, 'address')}
+                          className={`flex flex-col items-center gap-1 px-3 py-2.5 rounded-xl transition-all font-semibold text-xs shrink-0 min-w-[60px] ${copySuccess === 'address' ? 'bg-green-500 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white'}`}
+                        >
+                          {copySuccess === 'address' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                          {copySuccess === 'address' ? t('pendingCopied') : t('pendingCopy')}
+                        </button>
+                      </div>
+                    </div>
+
+                    <p className="text-yellow-300/70 text-xs mt-2.5 text-center">{t('sendExact')}</p>
                   </div>
-                </div>
 
-                <p className="text-yellow-300/70 text-xs mt-2.5 text-center">{t('sendExact')}</p>
-              </div>
-
-              <div className="bg-red-500/15 border-2 border-red-400/50 rounded-xl p-4">
-                <p className="text-red-200 text-sm font-bold text-center">{t('exactSolWarning')}</p>
-              </div>
+                  <div className="bg-red-500/15 border-2 border-red-400/50 rounded-xl p-4">
+                    <p className="text-red-200 text-sm font-bold text-center">{t('exactSolWarning')}</p>
+                  </div>
+                </>
+              )}
 
               {orderError && (
                 <div className="bg-red-500/20 border border-red-400/40 rounded-xl p-4">
@@ -1252,7 +1360,9 @@ export function Checkout({ onClose }: CheckoutProps) {
                     <Wallet className="w-5 h-5" />
                     <span>
                       {selectedPayment
-                        ? t('checkoutConfirm').replace('{amount}', solAmount)
+                        ? (selectedPayment === 'onramp'
+                            ? t('checkoutConfirmEur').replace('{amount}', (totalEurWithFee * (1 + CHANGENOW_FEE_PERCENT)).toFixed(2))
+                            : t('checkoutConfirm').replace('{amount}', solAmount))
                         : t('checkoutSelectMethod')}
                     </span>
                   </>
@@ -1378,35 +1488,37 @@ function SwapsGuide({ solAmount, totalEurWithFee }: { solAmount: string; totalEu
   );
 }
 
-function OnrampGuide({ solAmount, totalEurWithFee }: { solAmount: string; totalEurWithFee: number }) {
+function OnrampGuide({ totalEurWithFee }: { solAmount: string; totalEurWithFee: number }) {
+  const { t } = useLanguage();
+  const eurWithFee = (totalEurWithFee * 1.03).toFixed(2);
   return (
     <div className="space-y-4">
       <div className="bg-gradient-to-r from-emerald-600/20 to-blue-600/20 border border-emerald-400/30 rounded-xl p-4">
         <p className="text-white font-bold text-center text-base">ChangeNOW — SEPA / kortele / Apple Pay</p>
-        <p className="text-white/70 text-sm text-center mt-1">Nusipirkite SOL su banko pavedimu (SEPA), kortele arba Apple Pay ir gaukite tiesiai i uzsakymo adresa</p>
+        <p className="text-white/70 text-sm text-center mt-1">{t('changeNowGuideDesc')}</p>
       </div>
-      <GuideStep number={1} title="Patvirtinkite uzsakyma">
+      <GuideStep number={1} title={t('changeNowGuideStep1T')}>
         <div className="bg-white/10 rounded-lg p-3 space-y-2">
-          <p className="text-white/80 text-base">• Patvirtinus uzsakyma automatiskai atsidarys ChangeNOW puslapis</p>
-          <p className="text-white/80 text-base">• Mokejimo adresas bus nukopijuotas i jusu clipboard</p>
+          <p className="text-white/80 text-base">• {t('changeNowGuideStep1B1')}</p>
+          <p className="text-white/80 text-base">• {t('changeNowGuideStep1B2')}</p>
         </div>
       </GuideStep>
-      <GuideStep number={2} title="Nusipirkite SOL">
+      <GuideStep number={2} title={t('changeNowGuideStep2T')}>
         <div className="bg-white/10 rounded-lg p-3 space-y-2">
-          <p className="text-white/80 text-base">• Pasirinkite suma: <span className="text-yellow-300 font-bold">{totalEurWithFee.toFixed(2)} EUR</span></p>
-          <p className="text-white/80 text-base">• Iklijuokite mokejimo adresa (Ctrl+V)</p>
-          <p className="text-white/80 text-base">• Pasirinkite mokejimo buda: <span className="text-emerald-300 font-semibold">SEPA, kortele, Apple Pay</span></p>
+          <p className="text-white/80 text-base">• {t('changeNowGuideStep2B1').replace('{amount}', eurWithFee)}</p>
+          <p className="text-white/80 text-base">• {t('changeNowGuideStep2B2')}</p>
+          <p className="text-white/80 text-base">• {t('changeNowGuideStep2B3')}</p>
         </div>
       </GuideStep>
-      <GuideStep number={3} title="Laukite patvirtinimo">
+      <GuideStep number={3} title={t('changeNowGuideStep3T')}>
         <div className="bg-white/10 rounded-lg p-3 space-y-2">
-          <p className="text-white/80 text-base">• SOL bus nusiustas tiesiai i jusu uzsakymo adresa</p>
-          <p className="text-white/80 text-base">• Sistema automatiskai aptiks mokejima ir patvirtins uzsakyma</p>
+          <p className="text-white/80 text-base">• {t('changeNowGuideStep3B1')}</p>
+          <p className="text-white/80 text-base">• {t('changeNowGuideStep3B2')}</p>
           <p className="text-white/80 text-base">• Klausimais rasykite <a href="https://t.me/Peptidai" target="_blank" rel="noopener noreferrer" className="text-cyan-300 underline">@Peptidai</a></p>
         </div>
       </GuideStep>
       <a
-        href={`https://changenow.io/buy?from=eur&to=sol&amount=${Math.ceil(totalEurWithFee * 100) / 100}`}
+        href={`https://changenow.io/buy?from=eur&to=sol&amount=${eurWithFee}`}
         target="_blank"
         rel="noopener noreferrer"
         className="flex items-center justify-center gap-3 w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 px-6 rounded-xl transition-colors text-base mt-2"
@@ -1414,7 +1526,7 @@ function OnrampGuide({ solAmount, totalEurWithFee }: { solAmount: string; totalE
         <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
         </svg>
-        Pirkti SOL uz {totalEurWithFee.toFixed(2)}€ — ChangeNOW
+        {t('pendingBuyChangeNow').replace('{amount}', eurWithFee)}
       </a>
     </div>
   );

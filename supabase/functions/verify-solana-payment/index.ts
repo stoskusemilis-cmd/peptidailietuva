@@ -82,7 +82,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: order, error: orderError } = await supabase
       .from("orders")
-      .select("id, payment_status, transaction_signature, crypto_amount, created_at, deposit_address")
+      .select("id, payment_status, transaction_signature, crypto_amount, created_at, deposit_address, shipping_address")
       .eq("id", order_id)
       .maybeSingle();
 
@@ -113,6 +113,9 @@ Deno.serve(async (req: Request) => {
       });
     }
 
+    const paymentMethod = order.shipping_address?.payment_method ?? null;
+    const isChangeNow = paymentMethod === "onramp";
+
     const orderCreatedAt = new Date(order.created_at).getTime() / 1000;
     const sigs = await getRecentTransactions(order.deposit_address, 25);
     const candidates = sigs.filter((s) => s.err === null && s.blockTime != null && s.blockTime >= orderCreatedAt - 60);
@@ -121,7 +124,11 @@ Deno.serve(async (req: Request) => {
       const txInfo = await getTransactionAmount(sig.signature, order.deposit_address);
       if (!txInfo || txInfo.receivedSol <= 0) continue;
 
-      if (Math.abs(txInfo.receivedSol - expectedSolNum) <= TOLERANCE || txInfo.receivedSol >= expectedSolNum - TOLERANCE) {
+      const amountMatches = isChangeNow
+        ? txInfo.receivedSol >= expectedSolNum * 0.5
+        : (Math.abs(txInfo.receivedSol - expectedSolNum) <= TOLERANCE || txInfo.receivedSol >= expectedSolNum - TOLERANCE);
+
+      if (amountMatches) {
         const { data: updated } = await supabase
           .from("orders")
           .update({
