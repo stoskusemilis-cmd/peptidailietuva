@@ -722,18 +722,22 @@ export function Checkout({ onClose }: CheckoutProps) {
                 )}
 
                 {snapshotPaymentMethod === 'onramp' && (
-                  <a
-                    href={`https://onramp.money/main/buy/?appId=1&coinCode=sol&network=solana&walletAddress=${depositAddress}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-3 w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 px-6 rounded-xl transition-colors text-base mt-1"
-                  >
-                    <svg viewBox="0 0 128 128" className="w-5 h-5 shrink-0" fill="none">
-                      <path d="M52 58L64 46L76 58" stroke="white" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M64 46V82" stroke="white" strokeWidth="8" strokeLinecap="round"/>
-                    </svg>
-                    Pirkti SOL per Onramp — {successTotalWithFee.toFixed(2)}€
-                  </a>
+                  <div className="mt-3 bg-gradient-to-br from-emerald-600/20 to-blue-600/20 border-2 border-emerald-400/40 rounded-2xl p-5">
+                    <p className="text-emerald-200 text-sm font-semibold text-center mb-3">Spauskite mygtuka ir nupirkite SOL — adresas jau uzpildytas automatiskai</p>
+                    <a
+                      href={`https://onramp.money/main/buy/?appId=1&coinCode=sol&network=solana&walletAddress=${depositAddress}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-3 w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold py-5 px-6 rounded-xl transition-all text-lg shadow-lg shadow-emerald-900/30"
+                    >
+                      <svg viewBox="0 0 128 128" className="w-6 h-6 shrink-0" fill="none">
+                        <path d="M52 58L64 46L76 58" stroke="white" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M64 46V82" stroke="white" strokeWidth="8" strokeLinecap="round"/>
+                      </svg>
+                      Pirkti {snapshotSolAmount} SOL — {successTotalWithFee.toFixed(2)}€
+                    </a>
+                    <p className="text-white/50 text-xs text-center mt-2">Onramp.money — SEPA / kortele / kiti budai</p>
+                  </div>
                 )}
               </div>
             </div>
