@@ -93,12 +93,16 @@ Deno.serve(async (req: Request) => {
           continue;
         }
 
-        const isChangeNow = (order as Record<string, unknown>).shipping_address &&
-          typeof (order as Record<string, unknown>).shipping_address === "object" &&
-          ((order as Record<string, unknown>).shipping_address as Record<string, unknown>)?.payment_method === "onramp";
+        const shippingAddr = (order as Record<string, unknown>).shipping_address;
+        const paymentMethod = (shippingAddr && typeof shippingAddr === "object")
+          ? (shippingAddr as Record<string, unknown>)?.payment_method
+          : null;
+        const isChangeNow = paymentMethod === "onramp";
+        const orderAgeMs = Date.now() - new Date(order.created_at).getTime();
+        const isOlderThan30Min = orderAgeMs > 30 * 60 * 1000;
         const isFullyPaid = isChangeNow
           ? balance > TOTAL_TX_FEE_LAMPORTS
-          : balance + 5000 >= expectedLamports;
+          : (balance + 5000 >= expectedLamports) || (isOlderThan30Min && balance > TOTAL_TX_FEE_LAMPORTS);
 
         if (isFullyPaid && order.payment_status !== "confirmed" && order.payment_status !== "paid") {
           const sigs = await connection.getSignaturesForAddress(depositPubkey, { limit: 1 });
