@@ -8,7 +8,7 @@ import {
   SystemProgram,
   Transaction,
   ComputeBudgetProgram,
-} from "npm:@solana/web3.js@1.87.6";
+} from "npm:@solana/web3.js@1.98.4";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -65,8 +65,29 @@ Deno.serve(async (req: Request) => {
     else if (body.deposit_address) q = q.eq("deposit_address", body.deposit_address);
     else throw new Error("order_id or deposit_address required");
 
-    const { data: order } = await q.maybeSingle();
-    if (!order) throw new Error("order not found");
+    const { data: orderFromDb } = await q.maybeSingle();
+
+    let order: { id: string | null; order_number: string | null; deposit_address: string; derivation_index: number };
+
+    if (orderFromDb) {
+      order = orderFromDb;
+    } else if (body.deposit_address) {
+      // Order not in DB — brute-force derivation index to find the matching keypair
+      const targetAddress = body.deposit_address;
+      let foundIndex = -1;
+      for (let i = 0; i <= 500; i++) {
+        const { key } = derivePath(`m/44'/501'/${i}'/0'`, seedHex);
+        const kp = Keypair.fromSeed(key);
+        if (kp.publicKey.toBase58() === targetAddress) {
+          foundIndex = i;
+          break;
+        }
+      }
+      if (foundIndex === -1) throw new Error("address not derived from master seed (checked 0-500)");
+      order = { id: null, order_number: null, deposit_address: targetAddress, derivation_index: foundIndex };
+    } else {
+      throw new Error("order not found");
+    }
 
     const balance: number = await rpc("getBalance", [order.deposit_address, { commitment: "confirmed" }]).then((r) => r.value);
 
@@ -136,27 +157,29 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    await supabase
-      .from("orders")
-      .update({
-        swept_at: new Date().toISOString(),
-        sweep_signature: sentSig,
-        payment_status: "confirmed",
-        order_status: "paid",
-        payment_confirmed_at: new Date().toISOString(),
-      })
-      .eq("id", order.id);
+    if (order.id) {
+      await supabase
+        .from("orders")
+        .update({
+          swept_at: new Date().toISOString(),
+          sweep_signature: sentSig,
+          payment_status: "confirmed",
+          order_status: "paid",
+          payment_confirmed_at: new Date().toISOString(),
+        })
+        .eq("id", order.id);
 
-    await supabase.from("payment_events").insert({
-      order_id: order.id,
-      event_type: "funds_swept",
-      new_status: "swept",
-      amount: sweepAmount / LAMPORTS_PER_SOL,
-      currency: "SOL",
-      transaction_signature: sentSig,
-      source: "force-sweep",
-      details: { to: mainPubkey.toBase58(), from: kp.publicKey.toBase58(), forced: true },
-    });
+      await supabase.from("payment_events").insert({
+        order_id: order.id,
+        event_type: "funds_swept",
+        new_status: "swept",
+        amount: sweepAmount / LAMPORTS_PER_SOL,
+        currency: "SOL",
+        transaction_signature: sentSig,
+        source: "force-sweep",
+        details: { to: mainPubkey.toBase58(), from: kp.publicKey.toBase58(), forced: true },
+      });
+    }
 
     return new Response(JSON.stringify({
       ok: true,
