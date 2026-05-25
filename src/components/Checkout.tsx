@@ -8,7 +8,7 @@ interface CheckoutProps {
   onClose: () => void;
 }
 
-type PaymentMethod = 'onramp' | 'swaps' | 'paybis' | 'phantom' | 'trust' | 'revolut' | null;
+type PaymentMethod = 'onramp' | 'swaps' | 'phantom' | 'trust' | 'revolut' | null;
 type Step = 'info' | 'payment' | 'pending' | 'success';
 
 export function Checkout({ onClose }: CheckoutProps) {
@@ -821,19 +821,6 @@ export function Checkout({ onClose }: CheckoutProps) {
                       </a>
                     )}
 
-                    {snapshotPaymentMethod === 'paybis' && (
-                      <a
-                        href={`https://paybis.com/buy-solana/?fromCurrencyCode=EUR&fromAmount=${successTotalWithFee.toFixed(2)}&toCurrencyCode=SOL&toAddress=${depositAddress}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center justify-center gap-3 w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-6 rounded-xl transition-colors text-base mt-1"
-                      >
-                        <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" fill="currentColor">
-                          <path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/>
-                        </svg>
-                        Mokėti kortele per Paybis — {successTotalWithFee.toFixed(2)}€
-                      </a>
-                    )}
                   </div>
                 </>
               )}
@@ -1181,29 +1168,6 @@ export function Checkout({ onClose }: CheckoutProps) {
                     guide={<SwapsGuide solAmount={solAmount} totalEurWithFee={totalEurWithFee} />}
                   />
 
-                  <PaymentOption
-                    id="paybis"
-                    selected={selectedPayment === 'paybis'}
-                    onSelect={() => setSelectedPayment('paybis')}
-                    expanded={expandedGuide === 'paybis'}
-                    onToggleGuide={() => toggleGuide('paybis')}
-                    label="Paybis"
-                    badge="KORTELE"
-                    badgeColor="bg-blue-600"
-                    howLabel={t('howTo')}
-                    icon={
-                      <svg viewBox="0 0 128 128" className="w-8 h-8" fill="none">
-                        <rect width="128" height="128" rx="26" fill="#1A56DB"/>
-                        <rect x="20" y="42" width="88" height="44" rx="8" fill="white"/>
-                        <rect x="20" y="54" width="88" height="12" fill="#1A56DB" fillOpacity="0.3"/>
-                        <rect x="28" y="68" width="20" height="8" rx="2" fill="#1A56DB" fillOpacity="0.5"/>
-                        <rect x="80" y="66" width="20" height="10" rx="3" fill="#F59E0B"/>
-                        <circle cx="86" cy="71" r="7" fill="#EF4444" fillOpacity="0.9"/>
-                        <circle cx="94" cy="71" r="7" fill="#F59E0B" fillOpacity="0.9"/>
-                      </svg>
-                    }
-                    guide={<PaybisGuide totalEurWithFee={totalEurWithFee} />}
-                  />
 
                   <PaymentOption
                     id="phantom"
@@ -1682,52 +1646,6 @@ function RevolutGuide({ solAmount, totalEurWithFee }: { solAmount: string; total
   );
 }
 
-function PaybisGuide({ totalEurWithFee }: { totalEurWithFee: number }) {
-  const paybisUrl = `https://paybis.com/buy-solana/?fromCurrencyCode=EUR&fromAmount=${totalEurWithFee.toFixed(2)}&toCurrencyCode=SOL`;
-  return (
-    <div className="space-y-4">
-      <div className="bg-gradient-to-r from-blue-600/20 to-cyan-600/20 border border-blue-400/30 rounded-xl p-4">
-        <p className="text-white font-bold text-center text-base">Paybis — mokėjimas kortele</p>
-        <p className="text-white/70 text-sm text-center mt-1">Greitas SOL pirkimas kortele be kriptovaliutos žinių</p>
-      </div>
-      <GuideStep number={1} title="Atidarykite Paybis">
-        <div className="bg-white/10 rounded-lg p-3 space-y-2">
-          <p className="text-white/80 text-base">• Spauskite mygtuką apačioje — suma jau užpildyta automatiškai</p>
-          <p className="text-white/80 text-base">• Bus rodoma: <span className="text-yellow-300 font-bold">{totalEurWithFee.toFixed(2)}€</span></p>
-          <p className="text-white/80 text-base">• Gavėjo adresas užpildytas automatiškai</p>
-        </div>
-      </GuideStep>
-      <GuideStep number={2} title="Mokėkite kortele">
-        <div className="bg-white/10 rounded-lg p-3 space-y-2">
-          <p className="text-white/80 text-base">• Įveskite savo kortelės duomenis</p>
-          <p className="text-white/80 text-base">• Gali reikėti patvirtinti el. paštu arba SMS</p>
-          <p className="text-white/80 text-base">• Visa suma: <span className="text-yellow-300 font-bold">{totalEurWithFee.toFixed(2)}€</span></p>
-        </div>
-        <div className="bg-green-500/20 border border-green-400/30 rounded-lg p-3 mt-2">
-          <p className="text-green-300 text-sm font-semibold">SOL bus automatiškai nusiųstas tiesiai mums.</p>
-        </div>
-      </GuideStep>
-      <GuideStep number={3} title="Laukite patvirtinimo">
-        <div className="bg-white/10 rounded-lg p-3 space-y-2">
-          <p className="text-white/80 text-base">• Mokėjimas patvirtinamas per kelias minutes</p>
-          <p className="text-white/80 text-base">• Sistema automatiškai užfiksuos gavimą</p>
-          <p className="text-white/80 text-base">• Klausimais rašykite <a href="https://t.me/Peptidai" target="_blank" rel="noopener noreferrer" className="text-cyan-300 underline">@Peptidai</a></p>
-        </div>
-      </GuideStep>
-      <a
-        href={paybisUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center justify-center gap-3 w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-6 rounded-xl transition-colors text-base mt-2"
-      >
-        <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" fill="currentColor">
-          <path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/>
-        </svg>
-        Mokėti {totalEurWithFee.toFixed(2)}€ kortele per Paybis
-      </a>
-    </div>
-  );
-}
 
 function GuideStep({ number, title, children }: { number: number; title: string; children: React.ReactNode }) {
   return (
