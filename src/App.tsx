@@ -50,7 +50,9 @@ function App() {
         price_tiers: tiersByProduct.get(product.id) ?? [],
       }));
 
-      setProducts(productsWithTiers);
+      const inStock = productsWithTiers.filter(p => !isOutOfStock(p));
+      const outStock = productsWithTiers.filter(p => isOutOfStock(p));
+      setProducts([...inStock, ...outStock]);
     } catch (error) {
       console.error('Error fetching products:', error);
     } finally {
