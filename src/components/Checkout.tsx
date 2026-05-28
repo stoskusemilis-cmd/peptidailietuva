@@ -375,8 +375,6 @@ export function Checkout({ onClose }: CheckoutProps) {
       clearCart();
 
       if (selectedPayment === 'onramp') {
-        const onrampEurAmount = totalEurWithFee + ONRAMP_EXTRA_EUR;
-        try { await navigator.clipboard.writeText(orderDepositAddress); } catch {}
         window.open('https://onramper.com/buy', '_blank');
       }
 

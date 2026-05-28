@@ -6,6 +6,7 @@ import { QuantityModal } from './components/QuantityModal';
 import { Cart } from './components/Cart';
 import { Checkout } from './components/Checkout';
 import { Toast } from './components/Toast';
+import { LegalModal } from './components/LegalPages';
 import { useCart } from './contexts/CartContext';
 import { useLanguage } from './contexts/LanguageContext';
 import { supabase, Product } from './lib/supabase';
@@ -21,6 +22,7 @@ function App() {
   const [showCheckout, setShowCheckout] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [legalModal, setLegalModal] = useState<'privacy' | 'terms' | null>(null);
   const { addToCart } = useCart();
   const { t } = useLanguage();
 
@@ -496,8 +498,26 @@ function App() {
               </div>
             </div>
 
-            <div className="border-t border-white/8 pt-5 text-center">
-              <p className="text-white/30 text-xs sm:text-sm">
+            <div className="border-t border-white/8 pt-5 space-y-3">
+              <p className="text-white/40 text-xs text-center leading-relaxed max-w-xl mx-auto">
+                {t('footerDisclaimer')}
+              </p>
+              <div className="flex items-center justify-center gap-4">
+                <button
+                  onClick={() => setLegalModal('privacy')}
+                  className="text-white/40 hover:text-cyan-300 text-xs transition-colors underline underline-offset-2"
+                >
+                  {t('footerPrivacy')}
+                </button>
+                <span className="text-white/20">|</span>
+                <button
+                  onClick={() => setLegalModal('terms')}
+                  className="text-white/40 hover:text-cyan-300 text-xs transition-colors underline underline-offset-2"
+                >
+                  {t('footerTerms')}
+                </button>
+              </div>
+              <p className="text-white/30 text-xs text-center">
                 {t('footerCopy')}
               </p>
             </div>
@@ -533,6 +553,10 @@ function App() {
           message={toastMessage}
           onClose={handleCloseToast}
         />
+      )}
+
+      {legalModal && (
+        <LegalModal type={legalModal} onClose={() => setLegalModal(null)} />
       )}
 
     </div>
