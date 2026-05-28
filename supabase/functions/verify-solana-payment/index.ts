@@ -9,6 +9,7 @@ const corsHeaders = {
 
 const LAMPORTS_PER_SOL = 1_000_000_000;
 const TOLERANCE = 0.00005;
+const ONRAMP_EUR_TOLERANCE = 10;
 
 async function rpcFetch(body: object): Promise<Response> {
   const rpcUrl = Deno.env.get("HELIUS_RPC_URL") || "https://api.mainnet-beta.solana.com";
@@ -82,7 +83,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: order, error: orderError } = await supabase
       .from("orders")
-      .select("id, payment_status, transaction_signature, crypto_amount, created_at, deposit_address, shipping_address")
+      .select("id, payment_status, transaction_signature, crypto_amount, total_amount, created_at, deposit_address, shipping_address")
       .eq("id", order_id)
       .maybeSingle();
 
@@ -114,7 +115,16 @@ Deno.serve(async (req: Request) => {
     }
 
     const paymentMethod = order.shipping_address?.payment_method ?? null;
-    const isChangeNow = paymentMethod === "onramp";
+    const isOnramp = paymentMethod === "onramp";
+
+    let solPriceEur = 0;
+    if (isOnramp) {
+      try {
+        const priceRes = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=eur");
+        const priceData = await priceRes.json();
+        solPriceEur = priceData?.solana?.eur ?? 0;
+      } catch {}
+    }
 
     const orderCreatedAt = new Date(order.created_at).getTime() / 1000;
     const sigs = await getRecentTransactions(order.deposit_address, 25);
@@ -124,9 +134,14 @@ Deno.serve(async (req: Request) => {
       const txInfo = await getTransactionAmount(sig.signature, order.deposit_address);
       if (!txInfo || txInfo.receivedSol <= 0) continue;
 
-      const amountMatches = isChangeNow
-        ? txInfo.receivedSol >= expectedSolNum * 0.5
-        : (Math.abs(txInfo.receivedSol - expectedSolNum) <= TOLERANCE || txInfo.receivedSol >= expectedSolNum - TOLERANCE);
+      let amountMatches = false;
+      if (isOnramp && solPriceEur > 0) {
+        const receivedEur = txInfo.receivedSol * solPriceEur;
+        const expectedEur = parseFloat(order.total_amount);
+        amountMatches = receivedEur >= (expectedEur - ONRAMP_EUR_TOLERANCE) && receivedEur <= (expectedEur + ONRAMP_EUR_TOLERANCE);
+      } else {
+        amountMatches = Math.abs(txInfo.receivedSol - expectedSolNum) <= TOLERANCE || txInfo.receivedSol >= expectedSolNum - TOLERANCE;
+      }
 
       if (amountMatches) {
         const { data: updated } = await supabase

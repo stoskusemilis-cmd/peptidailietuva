@@ -58,7 +58,7 @@ export function Checkout({ onClose }: CheckoutProps) {
 
   const SHIPPING_FEE_EUR = 3.5;
   const FREE_SHIPPING_THRESHOLD = 50;
-  const CHANGENOW_FEE_PERCENT = 0.03;
+  const ONRAMP_EXTRA_EUR = 5;
   const totalEur = getTotalPrice();
   const discountAmount = appliedDiscount ? parseFloat((totalEur * appliedDiscount.percent / 100).toFixed(2)) : 0;
   const discountedTotal = totalEur - discountAmount;
@@ -375,9 +375,9 @@ export function Checkout({ onClose }: CheckoutProps) {
       clearCart();
 
       if (selectedPayment === 'onramp') {
-        const onrampEurAmount = Math.ceil(totalEurWithFee * (1 + CHANGENOW_FEE_PERCENT) * 100) / 100;
+        const onrampEurAmount = totalEurWithFee + ONRAMP_EXTRA_EUR;
         try { await navigator.clipboard.writeText(orderDepositAddress); } catch {}
-        window.open(`https://changenow.io/buy?from=eur&to=sol&amount=${onrampEurAmount}`, '_blank');
+        window.open('https://onramper.com/buy', '_blank');
       }
 
       setStep('pending');
@@ -432,8 +432,8 @@ export function Checkout({ onClose }: CheckoutProps) {
                     <p className="text-white/50 text-xs mb-1">{t('pendingEurAmount')}</p>
                     <div className="flex items-center gap-2">
                       <div className="flex-1 bg-black/40 border border-emerald-400/30 rounded-xl px-4 py-3">
-                        <span className="text-2xl font-black text-emerald-300 font-mono tracking-tight">{(parseFloat(pendingTotalWithFee) * (1 + CHANGENOW_FEE_PERCENT)).toFixed(2)}€</span>
-                        <span className="text-white/40 text-sm ml-2">({pendingTotalWithFee}€ + 3% fee)</span>
+                        <span className="text-2xl font-black text-emerald-300 font-mono tracking-tight">{(parseFloat(pendingTotalWithFee) + ONRAMP_EXTRA_EUR).toFixed(2)}€</span>
+                        <span className="text-white/40 text-sm ml-2">({pendingTotalWithFee}€ + {ONRAMP_EXTRA_EUR}€ onramp fee)</span>
                       </div>
                     </div>
                   </div>
@@ -455,7 +455,7 @@ export function Checkout({ onClose }: CheckoutProps) {
                   </div>
 
                   <a
-                    href={`https://changenow.io/buy?from=eur&to=sol&amount=${(parseFloat(pendingTotalWithFee) * (1 + CHANGENOW_FEE_PERCENT)).toFixed(2)}`}
+                    href="https://onramper.com/buy"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center justify-center gap-3 w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold py-4 px-5 rounded-xl transition-all text-base shadow-lg shadow-emerald-900/40 animate-pulse hover:animate-none"
@@ -463,11 +463,11 @@ export function Checkout({ onClose }: CheckoutProps) {
                     <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
                     </svg>
-                    {t('pendingBuyChangeNow').replace('{amount}', (parseFloat(pendingTotalWithFee) * (1 + CHANGENOW_FEE_PERCENT)).toFixed(2))}
+                    {t('pendingBuyOnramp').replace('{amount}', (parseFloat(pendingTotalWithFee) + ONRAMP_EXTRA_EUR).toFixed(2))}
                   </a>
 
                   <div className="mt-3 bg-emerald-500/10 border border-emerald-400/30 rounded-xl p-3">
-                    <p className="text-emerald-200 text-xs text-center">{t('changeNowAutoNote')}</p>
+                    <p className="text-emerald-200 text-xs text-center">{t('onrampAutoNote')}</p>
                   </div>
                 </>
               ) : (
@@ -626,7 +626,7 @@ export function Checkout({ onClose }: CheckoutProps) {
                       <span className="text-white font-bold shrink-0">{t('successTotalPaid')}</span>
                       <span className="font-bold text-white text-lg">
                         {snapshotPaymentMethod === 'onramp'
-                          ? `${(successTotalWithFee * (1 + CHANGENOW_FEE_PERCENT)).toFixed(2)}€`
+                          ? `${(successTotalWithFee + ONRAMP_EXTRA_EUR).toFixed(2)}€`
                           : `${successTotalWithFee.toFixed(2)}€`}
                       </span>
                     </div>
@@ -711,19 +711,19 @@ export function Checkout({ onClose }: CheckoutProps) {
                 <>
                   <div className="bg-white/10 rounded-lg p-4 mb-4">
                     <p className="text-base text-white/60 mb-2">{t('successPaymentAmount')}</p>
-                    <p className="text-3xl font-bold text-emerald-300 mb-1">{(successTotalWithFee * (1 + CHANGENOW_FEE_PERCENT)).toFixed(2)}€</p>
+                    <p className="text-3xl font-bold text-emerald-300 mb-1">{(successTotalWithFee + ONRAMP_EXTRA_EUR).toFixed(2)}€</p>
                     <p className="text-base text-white/60">
-                      {successTotalWithFee.toFixed(2)}€ + 3% ChangeNow fee
+                      {successTotalWithFee.toFixed(2)}€ + {ONRAMP_EXTRA_EUR}€ onramp fee
                     </p>
                   </div>
 
                   <div className="bg-gradient-to-br from-emerald-600/20 to-emerald-900/20 border-2 border-emerald-400/50 rounded-2xl p-5 mb-4">
-                    <p className="text-emerald-100 text-base font-bold text-center mb-2">{t('changeNowBuyTitle')}</p>
-                    <p className="text-white/60 text-sm text-center mb-3">1. {t('changeNowStep1')}</p>
-                    <p className="text-white/60 text-sm text-center mb-3">2. {t('changeNowStep2').replace('{amount}', (successTotalWithFee * (1 + CHANGENOW_FEE_PERCENT)).toFixed(2))}</p>
-                    <p className="text-white/60 text-sm text-center mb-4">3. {t('changeNowStep3')}</p>
+                    <p className="text-emerald-100 text-base font-bold text-center mb-2">{t('onrampBuyTitle')}</p>
+                    <p className="text-white/60 text-sm text-center mb-3">1. {t('onrampStep1')}</p>
+                    <p className="text-white/60 text-sm text-center mb-3">2. {t('onrampStep2').replace('{amount}', (successTotalWithFee + ONRAMP_EXTRA_EUR).toFixed(2))}</p>
+                    <p className="text-white/60 text-sm text-center mb-4">3. {t('onrampStep3')}</p>
                     <a
-                      href={`https://changenow.io/buy?from=eur&to=sol&amount=${(successTotalWithFee * (1 + CHANGENOW_FEE_PERCENT)).toFixed(2)}`}
+                      href="https://onramper.com/buy"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center justify-center gap-3 w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold py-5 px-6 rounded-xl transition-all text-lg shadow-lg shadow-emerald-900/40 animate-pulse hover:animate-none"
@@ -731,9 +731,9 @@ export function Checkout({ onClose }: CheckoutProps) {
                       <svg viewBox="0 0 24 24" className="w-6 h-6 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
                       </svg>
-                      {t('pendingBuyChangeNow').replace('{amount}', (successTotalWithFee * (1 + CHANGENOW_FEE_PERCENT)).toFixed(2))}
+                      {t('pendingBuyOnramp').replace('{amount}', (successTotalWithFee + ONRAMP_EXTRA_EUR).toFixed(2))}
                     </a>
-                    <p className="text-white/40 text-xs text-center mt-2">ChangeNOW — SEPA / kortele / Apple Pay</p>
+                    <p className="text-white/40 text-xs text-center mt-2">Onramper — SEPA / kortele / Apple Pay</p>
                   </div>
 
                   <div className="space-y-3">
@@ -755,7 +755,7 @@ export function Checkout({ onClose }: CheckoutProps) {
                   </div>
 
                   <div className="mt-3 bg-emerald-500/10 border border-emerald-400/30 rounded-xl p-3">
-                    <p className="text-emerald-200 text-xs text-center">{t('changeNowAutoNote')}</p>
+                    <p className="text-emerald-200 text-xs text-center">{t('onrampAutoNote')}</p>
                   </div>
                 </>
               ) : (
@@ -831,8 +831,8 @@ export function Checkout({ onClose }: CheckoutProps) {
               <ul className="text-yellow-100 text-base space-y-2 text-left">
                 {snapshotPaymentMethod === 'onramp' ? (
                   <>
-                    <li>• {t('changeNowBullet1').replace('{amount}', (successTotalWithFee * (1 + CHANGENOW_FEE_PERCENT)).toFixed(2))}</li>
-                    <li>• {t('changeNowBullet2')}</li>
+                    <li>• {t('onrampBullet1').replace('{amount}', (successTotalWithFee + ONRAMP_EXTRA_EUR).toFixed(2))}</li>
+                    <li>• {t('onrampBullet2')}</li>
                     <li>• {t('successBullet3')}</li>
                   </>
                 ) : snapshotPaymentMethod === 'swaps' ? (
@@ -1128,7 +1128,7 @@ export function Checkout({ onClose }: CheckoutProps) {
                     onSelect={() => setSelectedPayment('onramp')}
                     expanded={expandedGuide === 'onramp'}
                     onToggleGuide={() => toggleGuide('onramp')}
-                    label="ChangeNOW Checkout"
+                    label="Onramper"
                     badge="SEPA / KORTELE"
                     badgeColor="bg-emerald-500"
                     badgeTextColor="text-white"
@@ -1247,13 +1247,13 @@ export function Checkout({ onClose }: CheckoutProps) {
                 <div className="bg-gradient-to-br from-[#0d2137] to-[#0a1929] border-2 border-emerald-400/30 rounded-2xl p-4">
                   <p className="text-white/50 text-xs font-semibold uppercase tracking-widest mb-3 text-center">{t('paymentInfo')}</p>
                   <div className="mb-3">
-                    <p className="text-white/50 text-xs mb-1">{t('changeNowEurLabel')}</p>
+                    <p className="text-white/50 text-xs mb-1">{t('onrampEurLabel')}</p>
                     <div className="flex-1 bg-black/40 border border-emerald-400/30 rounded-xl px-3 py-2.5">
-                      <span className="text-lg font-black text-emerald-300 font-mono">{(totalEurWithFee * (1 + CHANGENOW_FEE_PERCENT)).toFixed(2)}€</span>
-                      <span className="text-white/40 text-xs ml-2">({totalEurWithFee.toFixed(2)}€ + 3% fee)</span>
+                      <span className="text-lg font-black text-emerald-300 font-mono">{(totalEurWithFee + ONRAMP_EXTRA_EUR).toFixed(2)}€</span>
+                      <span className="text-white/40 text-xs ml-2">({totalEurWithFee.toFixed(2)}€ + {ONRAMP_EXTRA_EUR}€ fee)</span>
                     </div>
                   </div>
-                  <p className="text-emerald-300/70 text-xs mt-2.5 text-center">{t('changeNowAutoNote')}</p>
+                  <p className="text-emerald-300/70 text-xs mt-2.5 text-center">{t('onrampAutoNote')}</p>
                 </div>
               ) : (
                 <>
@@ -1325,7 +1325,7 @@ export function Checkout({ onClose }: CheckoutProps) {
                     <span>
                       {selectedPayment
                         ? (selectedPayment === 'onramp'
-                            ? t('checkoutConfirmEur').replace('{amount}', (totalEurWithFee * (1 + CHANGENOW_FEE_PERCENT)).toFixed(2))
+                            ? t('checkoutConfirmEur').replace('{amount}', (totalEurWithFee + ONRAMP_EXTRA_EUR).toFixed(2))
                             : t('checkoutConfirm').replace('{amount}', solAmount))
                         : t('checkoutSelectMethod')}
                     </span>
@@ -1454,35 +1454,35 @@ function SwapsGuide({ solAmount, totalEurWithFee }: { solAmount: string; totalEu
 
 function OnrampGuide({ totalEurWithFee }: { solAmount: string; totalEurWithFee: number }) {
   const { t } = useLanguage();
-  const eurWithFee = (totalEurWithFee * 1.03).toFixed(2);
+  const eurWithFee = (totalEurWithFee + 5).toFixed(2);
   return (
     <div className="space-y-4">
       <div className="bg-gradient-to-r from-emerald-600/20 to-blue-600/20 border border-emerald-400/30 rounded-xl p-4">
-        <p className="text-white font-bold text-center text-base">ChangeNOW — SEPA / kortele / Apple Pay</p>
-        <p className="text-white/70 text-sm text-center mt-1">{t('changeNowGuideDesc')}</p>
+        <p className="text-white font-bold text-center text-base">Onramper — SEPA / kortele / Apple Pay</p>
+        <p className="text-white/70 text-sm text-center mt-1">{t('onrampGuideDesc')}</p>
       </div>
-      <GuideStep number={1} title={t('changeNowGuideStep1T')}>
+      <GuideStep number={1} title={t('onrampGuideStep1T')}>
         <div className="bg-white/10 rounded-lg p-3 space-y-2">
-          <p className="text-white/80 text-base">• {t('changeNowGuideStep1B1')}</p>
-          <p className="text-white/80 text-base">• {t('changeNowGuideStep1B2')}</p>
+          <p className="text-white/80 text-base">• {t('onrampGuideStep1B1')}</p>
+          <p className="text-white/80 text-base">• {t('onrampGuideStep1B2')}</p>
         </div>
       </GuideStep>
-      <GuideStep number={2} title={t('changeNowGuideStep2T')}>
+      <GuideStep number={2} title={t('onrampGuideStep2T')}>
         <div className="bg-white/10 rounded-lg p-3 space-y-2">
-          <p className="text-white/80 text-base">• {t('changeNowGuideStep2B1').replace('{amount}', eurWithFee)}</p>
-          <p className="text-white/80 text-base">• {t('changeNowGuideStep2B2')}</p>
-          <p className="text-white/80 text-base">• {t('changeNowGuideStep2B3')}</p>
+          <p className="text-white/80 text-base">• {t('onrampGuideStep2B1').replace('{amount}', eurWithFee)}</p>
+          <p className="text-white/80 text-base">• {t('onrampGuideStep2B2')}</p>
+          <p className="text-white/80 text-base">• {t('onrampGuideStep2B3')}</p>
         </div>
       </GuideStep>
-      <GuideStep number={3} title={t('changeNowGuideStep3T')}>
+      <GuideStep number={3} title={t('onrampGuideStep3T')}>
         <div className="bg-white/10 rounded-lg p-3 space-y-2">
-          <p className="text-white/80 text-base">• {t('changeNowGuideStep3B1')}</p>
-          <p className="text-white/80 text-base">• {t('changeNowGuideStep3B2')}</p>
+          <p className="text-white/80 text-base">• {t('onrampGuideStep3B1')}</p>
+          <p className="text-white/80 text-base">• {t('onrampGuideStep3B2')}</p>
           <p className="text-white/80 text-base">• Klausimais rasykite <a href="https://t.me/Peptidai" target="_blank" rel="noopener noreferrer" className="text-cyan-300 underline">@Peptidai</a></p>
         </div>
       </GuideStep>
       <a
-        href={`https://changenow.io/buy?from=eur&to=sol&amount=${eurWithFee}`}
+        href="https://onramper.com/buy"
         target="_blank"
         rel="noopener noreferrer"
         className="flex items-center justify-center gap-3 w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 px-6 rounded-xl transition-colors text-base mt-2"
@@ -1490,7 +1490,7 @@ function OnrampGuide({ totalEurWithFee }: { solAmount: string; totalEurWithFee: 
         <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
         </svg>
-        {t('pendingBuyChangeNow').replace('{amount}', eurWithFee)}
+        {t('pendingBuyOnramp').replace('{amount}', eurWithFee)}
       </a>
     </div>
   );
