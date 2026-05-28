@@ -225,20 +225,19 @@ function App() {
                 {[
                   {
                     id: 0,
-                    label: 'Swaps.app',
-                    badge: t('swapsBadge'),
-                    badgeColor: 'bg-cyan-500 text-white',
-                    border: 'border-cyan-500/30',
-                    activeBorder: 'border-cyan-400/60',
-                    color: 'from-cyan-500/10 to-blue-500/10',
+                    label: 'Onrampa',
+                    badge: t('onrampaBadge'),
+                    badgeColor: 'bg-emerald-500 text-white',
+                    border: 'border-emerald-500/30',
+                    activeBorder: 'border-emerald-400/60',
+                    color: 'from-emerald-500/10 to-blue-500/10',
                     icon: (
                       <svg viewBox="0 0 128 128" className="w-8 h-8 shrink-0" fill="none">
-                        <rect width="128" height="128" rx="26" fill="#0B1426"/>
-                        <circle cx="64" cy="64" r="36" stroke="#00D2FF" strokeWidth="7" fill="none"/>
-                        <path d="M64 28 A36 36 0 0 1 100 64" stroke="#00D2FF" strokeWidth="7" strokeLinecap="round" fill="none"/>
-                        <path d="M82 50 L100 64 L82 78" stroke="#00D2FF" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-                        <path d="M64 100 A36 36 0 0 1 28 64" stroke="#ffffff" strokeWidth="7" strokeLinecap="round" fill="none" opacity="0.5"/>
-                        <path d="M46 78 L28 64 L46 50" stroke="#ffffff" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" fill="none" opacity="0.5"/>
+                        <rect width="128" height="128" rx="26" fill="#0D1B2A"/>
+                        <path d="M38 64C38 49.64 49.64 38 64 38C78.36 38 90 49.64 90 64C90 78.36 78.36 90 64 90C49.64 90 38 78.36 38 64Z" fill="#2C5BFF" fillOpacity="0.2"/>
+                        <path d="M52 58L64 46L76 58" stroke="#2C5BFF" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M64 46V82" stroke="#2C5BFF" strokeWidth="6" strokeLinecap="round"/>
+                        <path d="M44 72C44 78.627 49.373 84 56 84H72C78.627 84 84 78.627 84 72" stroke="#5495FF" strokeWidth="5" strokeLinecap="round"/>
                       </svg>
                     ),
                   },
@@ -321,17 +320,17 @@ function App() {
                       <div className="border-t border-white/10 p-4 space-y-3">
                         {id === 0 && (
                           <>
-                            <div className="bg-gradient-to-r from-cyan-600/20 to-blue-600/20 border border-cyan-400/30 rounded-xl p-3 text-center">
-                              <p className="text-white font-bold text-sm">{t('guideSwapsFastest')}</p>
-                              <p className="text-white/60 text-xs mt-0.5">{t('guideSwapsFastestDesc')}</p>
+                            <div className="bg-gradient-to-r from-emerald-600/20 to-blue-600/20 border border-emerald-400/30 rounded-xl p-3 text-center">
+                              <p className="text-white font-bold text-sm">{t('onrampaFastest')}</p>
+                              <p className="text-white/60 text-xs mt-0.5">{t('onrampaFastestDesc')}</p>
                             </div>
                             {[
-                              { n: 1, title: t('swapsStep1T'), d: t('swapsStep1D'), ok: t('swapsStep1Ok') },
-                              { n: 2, title: t('swapsStep2T'), d: t('swapsStep2D') },
-                              { n: 3, title: t('swapsStep3T'), d: t('swapsStep3D'), ok: t('swapsStep3Ok') },
+                              { n: 1, title: t('onrampaStep1T'), d: t('onrampaStep1D'), ok: t('onrampaStep1Ok') },
+                              { n: 2, title: t('onrampaStep2T'), d: t('onrampaStep2D') },
+                              { n: 3, title: t('onrampaStep3T'), d: t('onrampaStep3D'), ok: t('onrampaStep3Ok') },
                             ].map(({ n, title, d, ok }) => (
                               <div key={n} className="flex items-start gap-3 bg-white/5 rounded-xl p-3">
-                                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-cyan-500 flex items-center justify-center text-white font-bold text-xs">{n}</span>
+                                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold text-xs">{n}</span>
                                 <div>
                                   <p className="font-semibold text-white text-sm">{title}</p>
                                   <p className="text-xs text-white/60 leading-relaxed mt-0.5">{d}</p>
