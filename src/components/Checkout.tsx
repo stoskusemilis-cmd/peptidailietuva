@@ -8,7 +8,7 @@ interface CheckoutProps {
   onClose: () => void;
 }
 
-type PaymentMethod = 'onramp' | 'swaps' | 'phantom' | 'trust' | 'revolut' | null;
+type PaymentMethod = 'onramp' | 'phantom' | 'trust' | 'revolut' | null;
 type Step = 'info' | 'payment' | 'pending' | 'success';
 
 export function Checkout({ onClose }: CheckoutProps) {
@@ -805,21 +805,6 @@ export function Checkout({ onClose }: CheckoutProps) {
                       </div>
                     </div>
 
-                    {snapshotPaymentMethod === 'swaps' && (
-                      <a
-                        href={`https://www.swaps.app/?side=buy&amount=${snapshotSolAmount}&fiat=EUR&to=SOL%3Asolana&country=LT&method=apple_pay&toAddress=${depositAddress}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center justify-center gap-3 w-full bg-cyan-500 hover:bg-cyan-400 text-white font-bold py-4 px-6 rounded-xl transition-colors text-base mt-1"
-                      >
-                        <svg viewBox="0 0 128 128" className="w-5 h-5 shrink-0" fill="none">
-                          <rect width="128" height="128" rx="26" fill="white" fillOpacity="0.2"/>
-                          <path d="M32 80C32 80 40 56 64 56C88 56 96 32 96 32" stroke="white" strokeWidth="10" strokeLinecap="round"/>
-                          <path d="M32 48C32 48 40 72 64 72C88 72 96 96 96 96" stroke="white" strokeWidth="10" strokeLinecap="round" strokeOpacity="0.6"/>
-                        </svg>
-                        {t('successBuySwaps').replace('{amount}', snapshotSolAmount)}
-                      </a>
-                    )}
 
                   </div>
                 </>
@@ -833,12 +818,6 @@ export function Checkout({ onClose }: CheckoutProps) {
                   <>
                     <li>• {t('onrampBullet1').replace('{amount}', (successTotalWithFee + ONRAMP_EXTRA_EUR).toFixed(2))}</li>
                     <li>• {t('onrampBullet2')}</li>
-                    <li>• {t('successBullet3')}</li>
-                  </>
-                ) : snapshotPaymentMethod === 'swaps' ? (
-                  <>
-                    <li>• {t('successBullet1Swaps').replace('{amount}', snapshotSolAmount)}</li>
-                    <li>• {t('successBullet2Swaps')}</li>
                     <li>• {t('successBullet3')}</li>
                   </>
                 ) : (
@@ -1145,28 +1124,6 @@ export function Checkout({ onClose }: CheckoutProps) {
                     guide={<OnrampGuide solAmount={solAmount} totalEurWithFee={totalEurWithFee} />}
                   />
 
-                  <PaymentOption
-                    id="swaps"
-                    selected={selectedPayment === 'swaps'}
-                    onSelect={() => setSelectedPayment('swaps')}
-                    expanded={expandedGuide === 'swaps'}
-                    onToggleGuide={() => toggleGuide('swaps')}
-                    label="Swaps.app"
-                    badge={t('swapsBadge')}
-                    badgeColor="bg-cyan-500"
-                    howLabel={t('howTo')}
-                    icon={
-                      <svg viewBox="0 0 128 128" className="w-8 h-8" fill="none">
-                        <rect width="128" height="128" rx="26" fill="#0B1426"/>
-                        <circle cx="64" cy="64" r="36" stroke="#00D2FF" strokeWidth="7" fill="none"/>
-                        <path d="M64 28 A36 36 0 0 1 100 64" stroke="#00D2FF" strokeWidth="7" strokeLinecap="round" fill="none"/>
-                        <path d="M82 50 L100 64 L82 78" stroke="#00D2FF" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-                        <path d="M64 100 A36 36 0 0 1 28 64" stroke="#ffffff" strokeWidth="7" strokeLinecap="round" fill="none" opacity="0.5"/>
-                        <path d="M46 78 L28 64 L46 50" stroke="#ffffff" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" fill="none" opacity="0.5"/>
-                      </svg>
-                    }
-                    guide={<SwapsGuide solAmount={solAmount} totalEurWithFee={totalEurWithFee} />}
-                  />
 
 
                   <PaymentOption
@@ -1400,57 +1357,6 @@ function PaymentOption({ selected, onSelect, expanded, onToggleGuide, label, bad
   );
 }
 
-function SwapsGuide({ solAmount, totalEurWithFee }: { solAmount: string; totalEurWithFee: number }) {
-  const { t } = useLanguage();
-  const swapsUrl = `https://www.swaps.app/?side=buy&amount=${solAmount}&fiat=EUR&to=SOL%3Asolana&country=LT&method=apple_pay`;
-  return (
-    <div className="space-y-4">
-      <div className="bg-gradient-to-r from-cyan-600/20 to-blue-600/20 border border-cyan-400/30 rounded-xl p-4">
-        <p className="text-white font-bold text-center text-base">{t('guideSwapsFastest')}</p>
-        <p className="text-white/70 text-sm text-center mt-1">{t('guideSwapsFastestDesc')}</p>
-      </div>
-      <GuideStep number={1} title={t('guideSwaps1T')}>
-        <div className="bg-white/10 rounded-lg p-3 space-y-2">
-          <p className="text-white/80 text-base">• {t('guideSwaps1B1').replace('Swaps.app', '')} <span className="text-cyan-300 font-semibold">Swaps.app</span></p>
-          <p className="text-white/80 text-base">• {t('guideSwaps1B2').replace('{amount}', '')} <span className="text-yellow-300 font-bold">{solAmount} SOL</span></p>
-          <p className="text-white/80 text-base">• {t('guideSwaps1B3')}</p>
-        </div>
-      </GuideStep>
-      <GuideStep number={2} title={t('guideSwaps2T')}>
-        <div className="bg-white/10 rounded-lg p-3 space-y-2">
-          <p className="text-white/80 text-base">• {t('guideSwaps2B1')}</p>
-          <p className="text-white/80 text-base">• {t('guideSwaps2B2').replace('{amount}', totalEurWithFee.toFixed(2))}</p>
-          <p className="text-white/80 text-base">• {t('guideSwaps2B3')}</p>
-        </div>
-        <div className="bg-green-500/20 border border-green-400/30 rounded-lg p-3 mt-2">
-          <p className="text-green-300 text-sm font-semibold">{t('guideSwaps2Note')}</p>
-        </div>
-      </GuideStep>
-      <GuideStep number={3} title={t('guideSwaps3T')}>
-        <div className="bg-white/10 rounded-lg p-3 space-y-2">
-          <p className="text-white/80 text-base">• {t('guideSwaps3B1')}</p>
-          <p className="text-white/80 text-base">• {t('guideSwaps3B2')}</p>
-        </div>
-        <div className="bg-green-500/20 border border-green-400/30 rounded-lg p-3 mt-2">
-          <p className="text-green-300 text-base font-semibold"><a href="https://t.me/Peptidai" target="_blank" rel="noopener noreferrer" className="underline">@Peptidai (Telegram)</a></p>
-        </div>
-      </GuideStep>
-      <a
-        href={swapsUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center justify-center gap-3 w-full bg-cyan-500 hover:bg-cyan-400 text-white font-bold py-4 px-6 rounded-xl transition-colors text-base mt-2"
-      >
-        <svg viewBox="0 0 128 128" className="w-5 h-5 shrink-0" fill="none">
-          <rect width="128" height="128" rx="26" fill="white" fillOpacity="0.2"/>
-          <path d="M32 80C32 80 40 56 64 56C88 56 96 32 96 32" stroke="white" strokeWidth="10" strokeLinecap="round"/>
-          <path d="M32 48C32 48 40 72 64 72C88 72 96 96 96 96" stroke="white" strokeWidth="10" strokeLinecap="round" strokeOpacity="0.6"/>
-        </svg>
-        {t('guideSwapsBtn').replace('{amount}', solAmount)}
-      </a>
-    </div>
-  );
-}
 
 function OnrampGuide({ totalEurWithFee }: { solAmount: string; totalEurWithFee: number }) {
   const { t } = useLanguage();
