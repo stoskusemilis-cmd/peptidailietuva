@@ -8,14 +8,14 @@
   "theme_color": "#0a1929",
   "icons": [
     {
-      "src": "https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/Peptidailietuvalogonav.png",
+      "src": "/logo.jpeg",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/jpeg"
     },
     {
-      "src": "https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/Peptidailietuvalogonav.png",
+      "src": "/logo.jpeg",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/jpeg"
     }
   ]
 }
