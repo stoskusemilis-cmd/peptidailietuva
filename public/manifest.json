@@ -1,0 +1,21 @@
+{
+  "name": "Peptidai Lietuva",
+  "short_name": "Peptidai LT",
+  "description": "Aukščiausios kokybės tyrimo peptidai Lietuvoje",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a1929",
+  "theme_color": "#0a1929",
+  "icons": [
+    {
+      "src": "https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/Peptidailietuvalogonav.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/Peptidailietuvalogonav.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
