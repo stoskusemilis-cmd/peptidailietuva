@@ -11,6 +11,8 @@ const OUT_OF_STOCK_NAMES = new Set([
   'MELANOTAN 1 10MG',
   'PT-141 10MG',
   'AOD-9604 10MG',
+  'TESAMORELIN 20MG',
+  'TIRZEPATIDE 30MG',
 ]);
 
 export function isOutOfStock(product: { name: string; stock?: number }): boolean {
