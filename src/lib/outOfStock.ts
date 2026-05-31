@@ -6,6 +6,7 @@ const OUT_OF_STOCK_NAMES = new Set([
   '5-AMINO-1MQ 10MG',
   'SS-31 50MG',
   'BPC-157 10MG',
+  'BPC-157 10MG + TB-500 10MG',
 ]);
 
 export function isOutOfStock(product: { name: string; stock?: number }): boolean {
