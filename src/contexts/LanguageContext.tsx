@@ -13,7 +13,7 @@ const translations: Record<Language, Record<string, string>> = {
     // Header
     cart: 'Krepšelis',
     // Hero
-    heroSubtitle: 'Aukščiausios kokybės Peptidai. Patikimi pardavėjai Lietuvoje jau daugiau nei pusmetį.',
+    heroSubtitle: 'Aukščiausios kokybės Peptidai. Patikimi pardavėjai Lietuvoje jau daugiau nei 1 metai.',
     heroStat1: 'Šimtai patenkintų klientų',
     heroStat2: 'Greitas pristatymas visoje LT',
     heroStat3: '100% anonimiškas pirkimas',
@@ -22,10 +22,10 @@ const translations: Record<Language, Record<string, string>> = {
     // About
     aboutTitle: 'Apie mus',
     aboutSubtitle: 'Patikimiausia Peptidų ir Steroidų parduotuvė Lietuvoje',
-    aboutText1: 'Daugiau nei 6 mėnesius teikiame aukščiausios kokybės peptidus Lietuvos klientams.',
+    aboutText1: 'Daugiau nei 1 metus teikiame aukščiausios kokybės peptidus Lietuvos klientams.',
     aboutText2: 'Per šį laiką užsitarnavome šimtų klientų pasitikėjimą. Kiekvienas produktas tikrinamas ir siunčiamas rūpestingai, užtikrinant greitą ir saugų pristatymą.',
     aboutSlogan: 'Peptidai — ateities medicina.',
-    stat1Title: '6+ mėnesiai rinkoje',
+    stat1Title: '1 metai rinkoje',
     stat1Desc: 'Patirtis ir klientų pasitikėjimas',
     stat2Title: 'Siuntimas 2-3 d.',
     stat2Desc: 'Visoje Lietuvoje į paštomatus',
@@ -105,7 +105,7 @@ const translations: Record<Language, Record<string, string>> = {
     ctaQuestion: 'Turite klausimų?',
     ctaAnswer: 'Atsakome greitai ir paprastai.',
     ctaTelegram: 'Rašykite Telegram: @Peptidai',
-    ctaOperating: 'Veikiame jau daugiau nei 6 mėnesius',
+    ctaOperating: 'Veikiame jau daugiau nei 1 metus',
     // Footer
     footerContact: 'Susisiekite su mumis',
     footerCopy: '© 2025–2026 Peptidai Lietuva. Visi produktai skirti tik mokslinių tyrimų tikslams.',
@@ -341,7 +341,7 @@ const translations: Record<Language, Record<string, string>> = {
     // Header
     cart: 'Cart',
     // Hero
-    heroSubtitle: 'Highest quality peptides. Trusted seller in Lithuania for over half a year.',
+    heroSubtitle: 'Highest quality peptides. Trusted seller in Lithuania for over 1 year.',
     heroStat1: 'Hundreds of satisfied customers',
     heroStat2: 'Fast delivery across Lithuania',
     heroStat3: '100% anonymous purchase',
@@ -350,10 +350,10 @@ const translations: Record<Language, Record<string, string>> = {
     // About
     aboutTitle: 'About us',
     aboutSubtitle: 'The most trusted Peptides & Steroids store in Lithuania',
-    aboutText1: 'For over 6 months we have been providing the highest quality peptides to Lithuanian customers.',
+    aboutText1: 'For over 1 year we have been providing the highest quality peptides to Lithuanian customers.',
     aboutText2: 'In this time we have earned the trust of hundreds of customers. Each product is carefully checked and shipped, ensuring discreet and fast delivery.',
     aboutSlogan: 'Peptides — the medicine of the future.',
-    stat1Title: '6+ months on the market',
+    stat1Title: '1+ year on the market',
     stat1Desc: 'Experience and customer trust',
     stat2Title: 'Shipping 2-3 days',
     stat2Desc: 'Across Lithuania to parcel lockers',
@@ -433,7 +433,7 @@ const translations: Record<Language, Record<string, string>> = {
     ctaQuestion: 'Have questions?',
     ctaAnswer: 'We reply quickly, simply and discreetly.',
     ctaTelegram: 'Write Telegram: @Peptidai',
-    ctaOperating: 'Operating for over 6 months',
+    ctaOperating: 'Operating for over 1 year',
     // Footer
     footerContact: 'Contact us',
     footerCopy: '© 2025–2026 Peptidai Lietuva. All products intended for scientific research purposes only.',
@@ -669,7 +669,7 @@ const translations: Record<Language, Record<string, string>> = {
     // Header
     cart: 'Корзина',
     // Hero
-    heroSubtitle: 'Пептиды высочайшего качества. Проверенный продавец в Литве уже более полугода.',
+    heroSubtitle: 'Пептиды высочайшего качества. Проверенный продавец в Литве уже более 1 года.',
     heroStat1: 'Сотни довольных клиентов',
     heroStat2: 'Быстрая доставка по всей Литве',
     heroStat3: '100% анонимная покупка',
@@ -678,10 +678,10 @@ const translations: Record<Language, Record<string, string>> = {
     // About
     aboutTitle: 'О нас',
     aboutSubtitle: 'Самый надёжный магазин пептидов и стероидов в Литве',
-    aboutText1: 'Более 6 месяцев мы предоставляем пептиды высочайшего качества клиентам Литвы.',
+    aboutText1: 'Более 1 года мы предоставляем пептиды высочайшего качества клиентам Литвы.',
     aboutText2: 'За это время мы завоевали доверие сотен клиентов. Каждый товар тщательно проверяется и упаковывается, обеспечивая дискретную и быструю доставку.',
     aboutSlogan: 'Пептиды — медицина будущего.',
-    stat1Title: '6+ месяцев на рынке',
+    stat1Title: '1+ год на рынке',
     stat1Desc: 'Опыт и доверие клиентов',
     stat2Title: 'Доставка 2-3 дня',
     stat2Desc: 'По всей Литве в постоматы',
@@ -761,7 +761,7 @@ const translations: Record<Language, Record<string, string>> = {
     ctaQuestion: 'Есть вопросы?',
     ctaAnswer: 'Отвечаем быстро, просто и дискретно.',
     ctaTelegram: 'Пишите в Telegram: @Peptidai',
-    ctaOperating: 'Работаем уже более 6 месяцев',
+    ctaOperating: 'Работаем уже более 1 года',
     // Footer
     footerContact: 'Свяжитесь с нами',
     footerCopy: '© 2025–2026 Peptidai Lietuva. Все товары предназначены исключительно для научных исследований.',
