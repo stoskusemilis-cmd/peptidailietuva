@@ -14,6 +14,7 @@ const OUT_OF_STOCK_NAMES = new Set([
   'TESAMORELIN 20MG',
   'TIRZEPATIDE 30MG',
   'DSIP 5MG',
+  'EPITALON 50MG',
 ]);
 
 export function isOutOfStock(product: { name: string; stock?: number }): boolean {
