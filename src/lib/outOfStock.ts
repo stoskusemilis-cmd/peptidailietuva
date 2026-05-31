@@ -13,6 +13,7 @@ const OUT_OF_STOCK_NAMES = new Set([
   'AOD-9604 10MG',
   'TESAMORELIN 20MG',
   'TIRZEPATIDE 30MG',
+  'DSIP 5MG',
 ]);
 
 export function isOutOfStock(product: { name: string; stock?: number }): boolean {
