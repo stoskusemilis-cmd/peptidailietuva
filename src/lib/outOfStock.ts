@@ -9,6 +9,7 @@ const OUT_OF_STOCK_NAMES = new Set([
   'TB-500 10MG',
   'BPC-157 10MG + TB-500 10MG',
   'MELANOTAN 1 10MG',
+  'PT-141 10MG',
 ]);
 
 export function isOutOfStock(product: { name: string; stock?: number }): boolean {
