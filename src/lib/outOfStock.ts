@@ -15,6 +15,7 @@ const OUT_OF_STOCK_NAMES = new Set([
   'TIRZEPATIDE 30MG',
   'DSIP 5MG',
   'EPITALON 50MG',
+  'KPV 10MG',
 ]);
 
 export function isOutOfStock(product: { name: string; stock?: number }): boolean {
