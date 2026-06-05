@@ -2,7 +2,6 @@ const OUT_OF_STOCK_NAMES = new Set([
   'GLOW 70MG',
   'HGH 15IU',
   'MASTERONE E 2000MG',
-  'SEMAX 10MG',
   '5-AMINO-1MQ 10MG',
   'SS-31 50MG',
   'BPC-157 10MG',
