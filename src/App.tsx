@@ -101,13 +101,14 @@ function App() {
       <Header onCartClick={() => setShowCart(true)} onLogoClick={scrollToTop} />
 
       <div className="relative z-10 w-full px-3 sm:px-6 md:px-10 pt-2">
-        <img
-          src="https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/pradziaatidarymas1.jpeg"
-          alt="Peptidai Lietuva"
+        <video
+          src="https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/videoreklama.mov"
           className="w-full h-auto block rounded-xl sm:rounded-2xl"
-          loading="eager"
-          decoding="async"
-          fetchPriority="high"
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="auto"
         />
       </div>
 
