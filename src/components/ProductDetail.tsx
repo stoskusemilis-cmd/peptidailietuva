@@ -69,7 +69,8 @@ export function ProductDetail({ product, onClose, onAddToCart }: ProductDetailPr
             {imageSrc ? (
               <img
                 src={imageSrc}
-                alt={product.name}
+                alt={`${product.name} - tyrimo peptidas pirkti Lietuvoje | Peptidai Lietuva`}
+                title={`${product.name} - kaina nuo €${product.price}`}
                 className={`w-full h-full object-contain ${outOfStock ? 'grayscale opacity-50' : ''}`}
               />
             ) : (

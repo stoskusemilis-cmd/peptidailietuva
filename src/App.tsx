@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Header } from './components/Header';
 import { ProductCard } from './components/ProductCard';
 import { ProductDetail } from './components/ProductDetail';
@@ -13,6 +13,42 @@ import { supabase, Product } from './lib/supabase';
 import { isOutOfStock } from './lib/outOfStock';
 import { Loader, Mail, Send, Facebook, Instagram, Clock, CheckCircle, Lock, Zap, Truck, Shield, ChevronDown, ChevronUp } from 'lucide-react';
 
+function slugify(name: string): string {
+  return name.toLowerCase()
+    .replace(/\+/g, '-')
+    .replace(/[()]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+}
+
+function updateMetaTags(product: Product | null) {
+  const defaultTitle = 'Peptidai Lietuva | Tyrimo Peptidai, HGH, Steroidai - Greitas Pristatymas';
+  const defaultDesc = 'Peptidai Lietuva - patikimiausia tyrimo peptidų ir steroidų parduotuvė. Pristatymas 2-3 d. į paštomatus visoje Lietuvoje. 100% anonimiškas pirkimas.';
+
+  if (!product) {
+    document.title = defaultTitle;
+    document.querySelector('meta[name="description"]')?.setAttribute('content', defaultDesc);
+    document.querySelector('meta[property="og:title"]')?.setAttribute('content', defaultTitle);
+    document.querySelector('meta[property="og:description"]')?.setAttribute('content', defaultDesc);
+    document.querySelector('meta[property="og:image"]')?.setAttribute('content', 'https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/Peptidailietuvalogonav.png');
+    document.querySelector('meta[property="og:url"]')?.setAttribute('content', 'https://peptidailietuva.lt');
+    return;
+  }
+
+  const title = `${product.name} - Pirkti | Peptidai Lietuva`;
+  const desc = `${product.name} - ${product.description?.slice(0, 140) || 'Aukščiausios kokybės tyrimo junginys'}. Kaina nuo €${product.price}. Pristatymas 2-3 d. visoje Lietuvoje.`;
+  const url = `https://peptidailietuva.lt/#produktas-${slugify(product.name)}`;
+
+  document.title = title;
+  document.querySelector('meta[name="description"]')?.setAttribute('content', desc);
+  document.querySelector('meta[property="og:title"]')?.setAttribute('content', title);
+  document.querySelector('meta[property="og:description"]')?.setAttribute('content', desc);
+  document.querySelector('meta[property="og:url"]')?.setAttribute('content', url);
+  if (product.image_url) {
+    document.querySelector('meta[property="og:image"]')?.setAttribute('content', product.image_url);
+  }
+}
+
 function App() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,6 +61,7 @@ function App() {
   const [legalModal, setLegalModal] = useState<'privacy' | 'terms' | null>(null);
   const { addToCart } = useCart();
   const { t } = useLanguage();
+  const productsLoadedRef = useRef(false);
 
   useEffect(() => {
     fetchProducts();
@@ -63,6 +100,32 @@ function App() {
   };
 
   const handleCloseToast = useCallback(() => setShowToast(false), []);
+
+  // Open product from URL hash on initial load
+  useEffect(() => {
+    if (productsLoadedRef.current || products.length === 0) return;
+    productsLoadedRef.current = true;
+    const hash = window.location.hash;
+    if (hash.startsWith('#produktas-')) {
+      const slug = hash.replace('#produktas-', '');
+      const match = products.find(p => slugify(p.name) === slug);
+      if (match) setSelectedProduct(match);
+    }
+  }, [products]);
+
+  // Update URL hash and meta tags when product is selected/deselected
+  useEffect(() => {
+    if (selectedProduct) {
+      const slug = slugify(selectedProduct.name);
+      window.history.replaceState(null, '', `#produktas-${slug}`);
+      updateMetaTags(selectedProduct);
+    } else {
+      if (window.location.hash.startsWith('#produktas-')) {
+        window.history.replaceState(null, '', window.location.pathname);
+      }
+      updateMetaTags(null);
+    }
+  }, [selectedProduct]);
 
   const handleAddToCart = (product: Product, quantity = 1) => {
     if (isOutOfStock(product)) return;

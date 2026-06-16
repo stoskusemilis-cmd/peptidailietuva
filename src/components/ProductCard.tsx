@@ -34,7 +34,8 @@ export function ProductCard({ product, onAddToCart, onViewDetails, onQuickAdd }:
         {imageSrc ? (
           <img
             src={imageSrc}
-            alt={product.name}
+            alt={`${product.name} - pirkti peptidą Lietuvoje | Peptidai Lietuva`}
+            title={`${product.name} kaina €${product.price} - Peptidai Lietuva`}
             className={`w-full h-full object-contain relative z-10 group-hover:scale-105 transition-transform duration-500 ${outOfStock ? 'grayscale opacity-50' : ''}`}
             loading="lazy"
             decoding="async"
