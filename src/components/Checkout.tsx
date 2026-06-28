@@ -1211,50 +1211,28 @@ export function Checkout({ onClose }: CheckoutProps) {
                   <p className="text-emerald-300/70 text-xs mt-2.5 text-center">{t('onrampAutoNote')}</p>
                 </div>
               ) : (
-                <>
-                  <div className="bg-gradient-to-br from-[#0d2137] to-[#0a1929] border-2 border-cyan-400/30 rounded-2xl p-4">
-                    <p className="text-white/50 text-xs font-semibold uppercase tracking-widest mb-3 text-center">{t('paymentInfo')}</p>
+                <div className="bg-gradient-to-br from-[#0d2137] to-[#0a1929] border-2 border-cyan-400/30 rounded-2xl p-4">
+                  <p className="text-white/50 text-xs font-semibold uppercase tracking-widest mb-3 text-center">{t('paymentInfo')}</p>
 
-                    <div className="mb-3">
-                      <p className="text-white/50 text-xs mb-1">{t('exactSendAmount')}</p>
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 bg-black/40 border border-cyan-400/30 rounded-xl px-3 py-2.5">
-                          <span className="text-lg font-black text-cyan-300 font-mono">{solAmount} SOL</span>
-                          <span className="text-white/40 text-xs ml-2">≈ {totalEurWithFee.toFixed(2)}€</span>
-                        </div>
-                        <button
-                          onClick={() => copyToClipboard(solAmount, 'sol')}
-                          className={`flex flex-col items-center gap-1 px-3 py-2.5 rounded-xl transition-all font-semibold text-xs shrink-0 min-w-[60px] ${copySuccess === 'sol' ? 'bg-green-500 text-white' : 'bg-cyan-600 hover:bg-cyan-500 text-white'}`}
-                        >
-                          {copySuccess === 'sol' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                          {copySuccess === 'sol' ? t('pendingCopied') : t('pendingCopy')}
-                        </button>
+                  <div>
+                    <p className="text-white/50 text-xs mb-1">{t('exactSendAmount')}</p>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 bg-black/40 border border-cyan-400/30 rounded-xl px-3 py-2.5">
+                        <span className="text-lg font-black text-cyan-300 font-mono">{solAmount} SOL</span>
+                        <span className="text-white/40 text-xs ml-2">≈ {totalEurWithFee.toFixed(2)}€</span>
                       </div>
+                      <button
+                        onClick={() => copyToClipboard(solAmount, 'sol')}
+                        className={`flex flex-col items-center gap-1 px-3 py-2.5 rounded-xl transition-all font-semibold text-xs shrink-0 min-w-[60px] ${copySuccess === 'sol' ? 'bg-green-500 text-white' : 'bg-cyan-600 hover:bg-cyan-500 text-white'}`}
+                      >
+                        {copySuccess === 'sol' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                        {copySuccess === 'sol' ? t('pendingCopied') : t('pendingCopy')}
+                      </button>
                     </div>
-
-                    <div>
-                      <p className="text-white/50 text-xs mb-1">{t('sendToAddress')}</p>
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 bg-black/40 border border-white/20 rounded-xl px-3 py-2.5 min-w-0">
-                          <p className="text-xs font-mono text-white/80 break-all leading-relaxed">{depositAddress}</p>
-                        </div>
-                        <button
-                          onClick={() => copyToClipboard(depositAddress, 'address')}
-                          className={`flex flex-col items-center gap-1 px-3 py-2.5 rounded-xl transition-all font-semibold text-xs shrink-0 min-w-[60px] ${copySuccess === 'address' ? 'bg-green-500 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white'}`}
-                        >
-                          {copySuccess === 'address' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                          {copySuccess === 'address' ? t('pendingCopied') : t('pendingCopy')}
-                        </button>
-                      </div>
-                    </div>
-
-                    <p className="text-yellow-300/70 text-xs mt-2.5 text-center">{t('sendExact')}</p>
                   </div>
 
-                  <div className="bg-red-500/15 border-2 border-red-400/50 rounded-xl p-4">
-                    <p className="text-red-200 text-sm font-bold text-center">{t('exactSolWarning')}</p>
-                  </div>
-                </>
+                  <p className="text-yellow-300/70 text-xs mt-2.5 text-center">{t('sendExact')}</p>
+                </div>
               )}
 
               {orderError && (
@@ -1279,9 +1257,7 @@ export function Checkout({ onClose }: CheckoutProps) {
                     <Wallet className="w-5 h-5" />
                     <span>
                       {selectedPayment
-                        ? (selectedPayment === 'onramp'
-                            ? t('checkoutConfirmEur').replace('{amount}', (totalEurWithFee + ONRAMP_EXTRA_EUR).toFixed(2))
-                            : t('checkoutConfirm').replace('{amount}', solAmount))
+                        ? t('checkoutGenerateAddress')
                         : t('checkoutSelectMethod')}
                     </span>
                   </>
