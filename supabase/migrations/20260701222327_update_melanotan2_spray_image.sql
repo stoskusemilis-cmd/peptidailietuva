@@ -1,0 +1,1 @@
+UPDATE products SET image_url = 'https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/melanotan2purskalas.png' WHERE name = 'MELANOTAN II 10MG NOSIES PURŠKALAS';
