@@ -1,21 +1,16 @@
 const OUT_OF_STOCK_NAMES = new Set([
-  'GLOW 70MG',
   'HGH 15IU',
   'MASTERONE E 2000MG',
   '5-AMINO-1MQ 10MG',
-  'SS-31 50MG',
   'BPC-157 10MG',
   'TB-500 10MG',
   'BPC-157 10MG + TB-500 10MG',
-  'MELANOTAN 1 10MG',
   'PT-141 10MG',
   'AOD-9604 10MG',
   'TESAMORELIN 20MG',
-  'TIRZEPATIDE 30MG',
   'DSIP 5MG',
   'EPITALON 50MG',
   'KPV 10MG',
-  'LEMON BOTTLE 10ML',
 ]);
 
 export function isOutOfStock(product: { name: string; stock?: number }): boolean {
