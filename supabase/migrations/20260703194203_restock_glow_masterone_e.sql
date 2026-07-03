@@ -1,0 +1,1 @@
+UPDATE products SET stock = 100 WHERE name IN ('GLOW 70MG', 'MASTERONE E 2000MG');
