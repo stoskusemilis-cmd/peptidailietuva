@@ -4,213 +4,237 @@
   <url>
     <loc>https://peptidailietuva.lt/</loc>
     <image:image>
-      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/testosteronee2500mg.PNG</image:loc>
+      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/testosteronee2500mg.png</image:loc>
       <image:title>Testosterone Enanthate 2500mg - Peptidai Lietuva</image:title>
-      <image:caption>Testosterone Enanthate 2500mg tyrimo junginys pirkti Lietuvoje. Greitas pristatymas 2-3 d.</image:caption>
+      <image:caption>Testosterone Enanthate 2500mg tyrimo junginys pirkti Lietuvoje. Greitas pristatymas 2-3 d. į paštomatus.</image:caption>
       <image:geo_location>Lithuania</image:geo_location>
     </image:image>
     <image:image>
-      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/nad1000mg.PNG</image:loc>
+      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/nad+1000mg.png</image:loc>
       <image:title>NAD+ 1000mg peptidas - Peptidai Lietuva</image:title>
       <image:caption>NAD+ 1000mg tyrimo peptidas anti-senėjimui ir ląstelių energijai. Pirkti Lietuvoje.</image:caption>
       <image:geo_location>Lithuania</image:geo_location>
     </image:image>
     <image:image>
-      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/nad500mg.PNG</image:loc>
+      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/nad500mg.png</image:loc>
       <image:title>NAD+ 500mg peptidas - Peptidai Lietuva</image:title>
-      <image:caption>NAD+ 500mg tyrimo peptidas pradedantiesiems. Pirkti Lietuvoje su pristatymu.</image:caption>
+      <image:caption>NAD+ 500mg tyrimo peptidas pradedantiesiems. Peptidai Lietuvoje su pristatymu.</image:caption>
       <image:geo_location>Lithuania</image:geo_location>
     </image:image>
     <image:image>
-      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/glutathione600mg.PNG</image:loc>
-      <image:title>Glutathione 600mg - Peptidai Lietuva</image:title>
-      <image:caption>Glutathione 600mg antioksidantas detoksikacijai ir ląstelių apsaugai.</image:caption>
+      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/glutathione600mg.png</image:loc>
+      <image:title>Glutathione 600mg antioksidantas - Peptidai Lietuva</image:title>
+      <image:caption>Glutathione 600mg galingas antioksidantas detoksikacijai. Peptidai Lietuvoje.</image:caption>
       <image:geo_location>Lithuania</image:geo_location>
     </image:image>
     <image:image>
-      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/motsc40mg.PNG</image:loc>
-      <image:title>MOTS-C 40mg peptidas - Peptidai Lietuva</image:title>
-      <image:caption>MOTS-C 40mg mitochondrinis peptidas energijai ir metabolizmui.</image:caption>
+      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/ss3150mg.PNG</image:loc>
+      <image:title>SS-31 Elamipretide 50mg - Peptidai Lietuva</image:title>
+      <image:caption>SS-31 (Elamipretide) 50mg mitochondrijų apsaugos peptidas. Peptidai Lietuvoje.</image:caption>
       <image:geo_location>Lithuania</image:geo_location>
     </image:image>
     <image:image>
-      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/tesamorelin10mg.PNG</image:loc>
-      <image:title>Tesamorelin 10mg - Peptidai Lietuva</image:title>
-      <image:caption>Tesamorelin 10mg GHRH peptidas pilvo riebalų mažinimui.</image:caption>
+      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/motsc40mg.png</image:loc>
+      <image:title>MOTS-C 40mg mitochondrinis peptidas - Peptidai Lietuva</image:title>
+      <image:caption>MOTS-C 40mg mitochondrinis peptidas energijai ir metabolizmui. Peptidai Lietuvoje.</image:caption>
+      <image:geo_location>Lithuania</image:geo_location>
+    </image:image>
+    <image:image>
+      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/tesamorelin10mg.png</image:loc>
+      <image:title>Tesamorelin 10mg GHRH peptidas - Peptidai Lietuva</image:title>
+      <image:caption>Tesamorelin 10mg augimo hormono atpalaidavimo peptidas pilvo riebalų mažinimui.</image:caption>
       <image:geo_location>Lithuania</image:geo_location>
     </image:image>
     <image:image>
       <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/Tesamorelin20mg.PNG</image:loc>
       <image:title>Tesamorelin 20mg - Peptidai Lietuva</image:title>
-      <image:caption>Tesamorelin 20mg stipri dozė augimo hormono atpalaidavimo peptido.</image:caption>
+      <image:caption>Tesamorelin 20mg stipri dozė augimo hormono atpalaidavimo peptido. Peptidai Lietuvoje.</image:caption>
       <image:geo_location>Lithuania</image:geo_location>
     </image:image>
     <image:image>
-      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/retatrutide15mg.PNG</image:loc>
-      <image:title>Retatrutide 15mg - Peptidai Lietuva</image:title>
+      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/retatrutide15mg.png</image:loc>
+      <image:title>Retatrutide 15mg svorio metimo peptidas - Peptidai Lietuva</image:title>
       <image:caption>Retatrutide 15mg naujos kartos triplasis agonistas svorio valdymui Lietuvoje.</image:caption>
       <image:geo_location>Lithuania</image:geo_location>
     </image:image>
     <image:image>
-      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/retatrutide30mg.PNG</image:loc>
+      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/retatrutide30mg.png</image:loc>
       <image:title>Retatrutide 30mg - Peptidai Lietuva</image:title>
       <image:caption>Retatrutide 30mg stipri dozė svorio metimo peptido. Pirkti Lietuvoje.</image:caption>
       <image:geo_location>Lithuania</image:geo_location>
     </image:image>
     <image:image>
       <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/tirzepatide30mg.PNG</image:loc>
-      <image:title>Tirzepatide 30mg - Peptidai Lietuva</image:title>
-      <image:caption>Tirzepatide 30mg GLP-1/GIP dvigubas agonistas svorio valdymui.</image:caption>
-      <image:geo_location>Lithuania</image:geo_location>
-    </image:image>
-    <image:image>
-      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/melanotan210mg.PNG</image:loc>
-      <image:title>Melanotan II 10mg - Peptidai Lietuva</image:title>
-      <image:caption>Melanotan II 10mg peptidas natūraliam įdegiui ir metabolizmui.</image:caption>
+      <image:title>Tirzepatide 30mg GLP-1 peptidas - Peptidai Lietuva</image:title>
+      <image:caption>Tirzepatide 30mg GLP-1/GIP dvigubas agonistas svorio valdymui. Peptidai Lietuvoje.</image:caption>
       <image:geo_location>Lithuania</image:geo_location>
     </image:image>
     <image:image>
       <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/melanotan110mg.PNG</image:loc>
-      <image:title>Melanotan 1 10mg - Peptidai Lietuva</image:title>
-      <image:caption>Melanotan 1 10mg saugesnė alternatyva natūraliam įdegiui.</image:caption>
+      <image:title>Melanotan I 10mg peptidas - Peptidai Lietuva</image:title>
+      <image:caption>Melanotan I (Afamelanotide) 10mg peptidas natūraliam įdegiui. Pirkti Lietuvoje.</image:caption>
       <image:geo_location>Lithuania</image:geo_location>
     </image:image>
     <image:image>
-      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/ghkcu100mg.PNG</image:loc>
-      <image:title>GHK-Cu 100mg vario peptidas - Peptidai Lietuva</image:title>
-      <image:caption>GHK-Cu 100mg vario peptidas odos atjauninimui ir regeneracijai.</image:caption>
+      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/melanotan1purskalas.png</image:loc>
+      <image:title>Melanotan I 10mg nosies purškalas - Peptidai Lietuva</image:title>
+      <image:caption>Melanotan I 10mg nosies purškalas nazalinis spray natūraliam įdegiui. Peptidai Lietuvoje.</image:caption>
       <image:geo_location>Lithuania</image:geo_location>
     </image:image>
     <image:image>
-      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/glow70mg.PNG</image:loc>
-      <image:title>GLOW 70mg peptidų kompleksas - Peptidai Lietuva</image:title>
-      <image:caption>GLOW 70mg universalus gijimo kompleksas BPC-157 TB-500 GHK-Cu.</image:caption>
+      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/melanotan210mg.png</image:loc>
+      <image:title>Melanotan II 10mg peptidas - Peptidai Lietuva</image:title>
+      <image:caption>Melanotan II 10mg melanocitus stimuliuojantis peptidas įdegiui ir metabolizmui.</image:caption>
       <image:geo_location>Lithuania</image:geo_location>
     </image:image>
     <image:image>
-      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/klow80mg.PNG</image:loc>
-      <image:title>KLOW 80mg peptidų kompleksas - Peptidai Lietuva</image:title>
-      <image:caption>KLOW 80mg pažangus gijimo kompleksas su KPV priešuždegiminiu peptidu.</image:caption>
+      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/melanotan2purskalas.png</image:loc>
+      <image:title>Melanotan II 10mg nosies purškalas - Peptidai Lietuva</image:title>
+      <image:caption>Melanotan II 10mg nosies purškalas nazalinis spray įdegiui. Peptidai Lietuvoje.</image:caption>
       <image:geo_location>Lithuania</image:geo_location>
     </image:image>
     <image:image>
       <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/bpc15710mg.PNG</image:loc>
-      <image:title>BPC-157 10mg - Peptidai Lietuva</image:title>
-      <image:caption>BPC-157 10mg gijimo peptidas sąnariams raumenims ir audinių regeneracijai.</image:caption>
-      <image:geo_location>Lithuania</image:geo_location>
-    </image:image>
-    <image:image>
-      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/tb50010mg.PNG</image:loc>
-      <image:title>TB-500 10mg - Peptidai Lietuva</image:title>
-      <image:caption>TB-500 10mg audinių regeneracijos peptidas gijimui pagreitinti.</image:caption>
+      <image:title>BPC-157 10mg gijimo peptidas - Peptidai Lietuva</image:title>
+      <image:caption>BPC-157 10mg gijimo peptidas sąnariams raumenims ir audinių regeneracijai. Pirkti Lietuvoje.</image:caption>
       <image:geo_location>Lithuania</image:geo_location>
     </image:image>
     <image:image>
       <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/bpc157tb500.PNG</image:loc>
-      <image:title>BPC-157 + TB-500 kompleksas - Peptidai Lietuva</image:title>
-      <image:caption>BPC-157 10mg + TB-500 10mg gijimo peptidų kompleksas.</image:caption>
+      <image:title>BPC-157 + TB-500 gijimo kompleksas - Peptidai Lietuva</image:title>
+      <image:caption>BPC-157 10mg + TB-500 10mg sinerginis gijimo peptidų kompleksas. Peptidai Lietuvoje.</image:caption>
       <image:geo_location>Lithuania</image:geo_location>
     </image:image>
     <image:image>
       <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/kpv10mg.PNG</image:loc>
-      <image:title>KPV 10mg - Peptidai Lietuva</image:title>
-      <image:caption>KPV 10mg priešuždegiminis peptidas.</image:caption>
+      <image:title>KPV 10mg priešuždegiminis peptidas - Peptidai Lietuva</image:title>
+      <image:caption>KPV 10mg priešuždegiminis tripeptidas žarnyno sveikatai. Pirkti Lietuvoje.</image:caption>
       <image:geo_location>Lithuania</image:geo_location>
     </image:image>
     <image:image>
-      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/hgh15iu.PNG</image:loc>
-      <image:title>HGH augimo hormonas 15IU - Peptidai Lietuva</image:title>
-      <image:caption>HGH 15IU žmogaus augimo hormonas pirkti Lietuvoje.</image:caption>
+      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/ghkcu100mg.png</image:loc>
+      <image:title>GHK-Cu 100mg vario peptidas - Peptidai Lietuva</image:title>
+      <image:caption>GHK-Cu 100mg vario peptidas odos atjauninimui ir kolageno regeneracijai.</image:caption>
       <image:geo_location>Lithuania</image:geo_location>
     </image:image>
     <image:image>
-      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/hgh24.PNG</image:loc>
-      <image:title>HGH augimo hormonas 24IU - Peptidai Lietuva</image:title>
-      <image:caption>HGH 24IU stipresnė dozė augimo hormono.</image:caption>
+      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/glow70mg.png</image:loc>
+      <image:title>GLOW 70mg peptidų kompleksas - Peptidai Lietuva</image:title>
+      <image:caption>GLOW 70mg universalus gijimo kompleksas BPC-157 TB-500 GHK-Cu. Peptidai Lietuvoje.</image:caption>
       <image:geo_location>Lithuania</image:geo_location>
     </image:image>
     <image:image>
-      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/hcg10000iu.PNG</image:loc>
-      <image:title>HCG 10000IU - Peptidai Lietuva</image:title>
-      <image:caption>HCG 10000IU chorioninis gonadotropinas hormonų ašies atstatymui.</image:caption>
-      <image:geo_location>Lithuania</image:geo_location>
-    </image:image>
-    <image:image>
-      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/igf1lr31mg.PNG</image:loc>
-      <image:title>IGF-1 LR3 1mg - Peptidai Lietuva</image:title>
-      <image:caption>IGF-1 LR3 1mg insulino panašus augimo faktorius raumenų augimui.</image:caption>
-      <image:geo_location>Lithuania</image:geo_location>
-    </image:image>
-    <image:image>
-      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/cjc5ipa5.PNG</image:loc>
-      <image:title>CJC-1295 + Ipamorelin - Peptidai Lietuva</image:title>
-      <image:caption>CJC-1295 be DAC 5mg + Ipamorelin 5mg augimo hormono kompleksas.</image:caption>
-      <image:geo_location>Lithuania</image:geo_location>
-    </image:image>
-    <image:image>
-      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/semax10mg.PNG</image:loc>
-      <image:title>Semax 10mg nootropinis peptidas - Peptidai Lietuva</image:title>
-      <image:caption>Semax 10mg nootropinis peptidas atminčiai ir koncentracijai gerinti.</image:caption>
-      <image:geo_location>Lithuania</image:geo_location>
-    </image:image>
-    <image:image>
-      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/selank10mg.PNG</image:loc>
-      <image:title>Selank 10mg - Peptidai Lietuva</image:title>
-      <image:caption>Selank 10mg nootropinis ir anksiolizinis peptidas nerimui ir stresui.</image:caption>
-      <image:geo_location>Lithuania</image:geo_location>
-    </image:image>
-    <image:image>
-      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/ss3150mg.PNG</image:loc>
-      <image:title>SS-31 50mg - Peptidai Lietuva</image:title>
-      <image:caption>SS-31 50mg mitochondrijų apsaugos peptidas Elamipretide.</image:caption>
+      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/klow80mg.png</image:loc>
+      <image:title>KLOW 80mg pažangus gijimo kompleksas - Peptidai Lietuva</image:title>
+      <image:caption>KLOW 80mg pažangus gijimo kompleksas su KPV priešuždegiminiu peptidu. Peptidai Lietuvoje.</image:caption>
       <image:geo_location>Lithuania</image:geo_location>
     </image:image>
     <image:image>
       <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/pt14110mg.PNG</image:loc>
-      <image:title>PT-141 10mg Bremelanotide - Peptidai Lietuva</image:title>
-      <image:caption>PT-141 10mg Bremelanotide seksualinės funkcijos peptidas.</image:caption>
+      <image:title>PT-141 Bremelanotide 10mg - Peptidai Lietuva</image:title>
+      <image:caption>PT-141 (Bremelanotide) 10mg tyrimo peptidas. Pirkti Lietuvoje.</image:caption>
+      <image:geo_location>Lithuania</image:geo_location>
+    </image:image>
+    <image:image>
+      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/hgh24iu.png</image:loc>
+      <image:title>HGH augimo hormonas 24IU - Peptidai Lietuva</image:title>
+      <image:caption>HGH 24IU žmogaus augimo hormonas. Peptidai Lietuvoje su greitu pristatymu.</image:caption>
+      <image:geo_location>Lithuania</image:geo_location>
+    </image:image>
+    <image:image>
+      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/hcg1000iu.png</image:loc>
+      <image:title>HCG 10000IU chorioninis gonadotropinas - Peptidai Lietuva</image:title>
+      <image:caption>HCG 10000IU chorioninis gonadotropinas hormonų ašies atstatymui. Peptidai Lietuvoje.</image:caption>
+      <image:geo_location>Lithuania</image:geo_location>
+    </image:image>
+    <image:image>
+      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/igf1lr31mg.png</image:loc>
+      <image:title>IGF-1 LR3 1mg augimo faktorius - Peptidai Lietuva</image:title>
+      <image:caption>IGF-1 LR3 1mg insulino panašus augimo faktorius raumenų augimui. Pirkti Lietuvoje.</image:caption>
+      <image:geo_location>Lithuania</image:geo_location>
+    </image:image>
+    <image:image>
+      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/cjc5ipa5.png</image:loc>
+      <image:title>CJC-1295 + Ipamorelin 5mg - Peptidai Lietuva</image:title>
+      <image:caption>CJC-1295 be DAC 5mg + Ipamorelin 5mg augimo hormono kompleksas. Peptidai Lietuvoje.</image:caption>
+      <image:geo_location>Lithuania</image:geo_location>
+    </image:image>
+    <image:image>
+      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/selank10mg.png</image:loc>
+      <image:title>Selank 10mg nootropinis peptidas - Peptidai Lietuva</image:title>
+      <image:caption>Selank 10mg nootropinis ir anksiolizinis peptidas nerimui ir stresui mažinti. Pirkti Lietuvoje.</image:caption>
+      <image:geo_location>Lithuania</image:geo_location>
+    </image:image>
+    <image:image>
+      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/selank10purskalas.png</image:loc>
+      <image:title>Selank 10mg nosies purškalas - Peptidai Lietuva</image:title>
+      <image:caption>Selank 10mg nosies purškalas nazalinis spray nerimui mažinti. Peptidai Lietuvoje.</image:caption>
       <image:geo_location>Lithuania</image:geo_location>
     </image:image>
     <image:image>
       <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/aod960410mg.PNG</image:loc>
-      <image:title>AOD-9604 10mg - Peptidai Lietuva</image:title>
-      <image:caption>AOD-9604 10mg HGH fragmentas riebalų deginimui be šalutinių poveikių.</image:caption>
-      <image:geo_location>Lithuania</image:geo_location>
-    </image:image>
-    <image:image>
-      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/epitalon50mg.PNG</image:loc>
-      <image:title>Epitalon 50mg - Peptidai Lietuva</image:title>
-      <image:caption>Epitalon 50mg telomerazės aktyvatorius anti-aging ir ilgaamžiškumui.</image:caption>
+      <image:title>AOD-9604 10mg HGH fragmentas - Peptidai Lietuva</image:title>
+      <image:caption>AOD-9604 10mg HGH fragmentas riebalų deginimui be šalutinių poveikių. Peptidai Lietuvoje.</image:caption>
       <image:geo_location>Lithuania</image:geo_location>
     </image:image>
     <image:image>
       <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/dsip5mg.PNG</image:loc>
       <image:title>DSIP 5mg miego peptidas - Peptidai Lietuva</image:title>
-      <image:caption>DSIP 5mg Delta Sleep Inducing Peptide giliam miegui ir poilsiui.</image:caption>
+      <image:caption>DSIP 5mg Delta Sleep Inducing Peptide giliam miegui ir poilsiui. Pirkti Lietuvoje.</image:caption>
+      <image:geo_location>Lithuania</image:geo_location>
+    </image:image>
+    <image:image>
+      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/semax10mg.png</image:loc>
+      <image:title>Semax 10mg nootropinis peptidas - Peptidai Lietuva</image:title>
+      <image:caption>Semax 10mg nootropinis peptidas atminčiai ir koncentracijai gerinti. Pirkti Lietuvoje.</image:caption>
+      <image:geo_location>Lithuania</image:geo_location>
+    </image:image>
+    <image:image>
+      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/semax10purskalas.png</image:loc>
+      <image:title>Semax 10mg nosies purškalas - Peptidai Lietuva</image:title>
+      <image:caption>Semax 10mg nosies purškalas nazalinis spray koncentracijai. Peptidai Lietuvoje.</image:caption>
+      <image:geo_location>Lithuania</image:geo_location>
+    </image:image>
+    <image:image>
+      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/epitalon50mg.PNG</image:loc>
+      <image:title>Epitalon Epithalon 50mg - Peptidai Lietuva</image:title>
+      <image:caption>Epitalon 50mg telomerazės aktyvatorius anti-aging ir ilgaamžiškumui. Peptidai Lietuvoje.</image:caption>
       <image:geo_location>Lithuania</image:geo_location>
     </image:image>
     <image:image>
       <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/lemonbottle10ml.PNG</image:loc>
-      <image:title>Lemon Bottle 10ml - Peptidai Lietuva</image:title>
-      <image:caption>Lemon Bottle 10ml lipolitinis tirpalas riebalų tirpinimui.</image:caption>
+      <image:title>Lemon Bottle 10ml lipolitinis tirpalas - Peptidai Lietuva</image:title>
+      <image:caption>Lemon Bottle 10ml lipolitinis tirpalas riebalų tirpinimui ir modeliavimui.</image:caption>
       <image:geo_location>Lithuania</image:geo_location>
     </image:image>
     <image:image>
-      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/5amino1mq.PNG</image:loc>
-      <image:title>5-Amino-1MQ 10mg - Peptidai Lietuva</image:title>
-      <image:caption>5-Amino-1MQ 10mg NNMT inhibitorius metabolizmo optimizavimui.</image:caption>
+      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/5amino1mq.png</image:loc>
+      <image:title>5-Amino-1MQ 10mg NNMT inhibitorius - Peptidai Lietuva</image:title>
+      <image:caption>5-Amino-1MQ 10mg NNMT inhibitorius metabolizmo optimizavimui. Peptidai Lietuvoje.</image:caption>
       <image:geo_location>Lithuania</image:geo_location>
     </image:image>
     <image:image>
-      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/masteronep1000mg.PNG</image:loc>
-      <image:title>Masterone P 1000mg Drostanolone - Peptidai Lietuva</image:title>
+      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/hgh15iu.png</image:loc>
+      <image:title>HGH augimo hormonas 15IU - Peptidai Lietuva</image:title>
+      <image:caption>HGH 15IU žmogaus augimo hormonas pirkti Lietuvoje. Peptidai Lietuva.</image:caption>
+      <image:geo_location>Lithuania</image:geo_location>
+    </image:image>
+    <image:image>
+      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/tb50010mg.PNG</image:loc>
+      <image:title>TB-500 10mg regeneracijos peptidas - Peptidai Lietuva</image:title>
+      <image:caption>TB-500 10mg audinių regeneracijos peptidas gijimui pagreitinti. Pirkti Lietuvoje.</image:caption>
+      <image:geo_location>Lithuania</image:geo_location>
+    </image:image>
+    <image:image>
+      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/masteronep1000mg.png</image:loc>
+      <image:title>Masterone P Drostanolone Propionate 1000mg - Peptidai Lietuva</image:title>
       <image:caption>Masterone P Drostanolone Propionate 1000mg tyrimo steroidas Lietuvoje.</image:caption>
       <image:geo_location>Lithuania</image:geo_location>
     </image:image>
     <image:image>
-      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/masteronee2000mg.PNG</image:loc>
-      <image:title>Masterone E 2000mg Drostanolone - Peptidai Lietuva</image:title>
-      <image:caption>Masterone E Drostanolone Enanthate 2000mg ilgo veikimo tyrimo steroidas.</image:caption>
+      <image:loc>https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/masteronee2000mg.png</image:loc>
+      <image:title>Masterone E Drostanolone Enanthate 2000mg - Peptidai Lietuva</image:title>
+      <image:caption>Masterone E Drostanolone Enanthate 2000mg ilgo veikimo tyrimo steroidas. Peptidai Lietuvoje.</image:caption>
       <image:geo_location>Lithuania</image:geo_location>
     </image:image>
   </url>

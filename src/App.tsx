@@ -22,8 +22,8 @@ function slugify(name: string): string {
 }
 
 function updateMetaTags(product: Product | null) {
-  const defaultTitle = 'Peptidai Lietuva | Tyrimo Peptidai, HGH, Steroidai - Greitas Pristatymas';
-  const defaultDesc = 'Peptidai Lietuva - patikimiausia tyrimo peptidų ir steroidų parduotuvė. Pristatymas 2-3 d. į paštomatus visoje Lietuvoje. 100% anonimiškas pirkimas.';
+  const defaultTitle = 'Peptidai Lietuva | Peptidai Lietuvoje - Tyrimo Peptidai, HGH, Steroidai | Greitas Pristatymas';
+  const defaultDesc = 'Peptidai Lietuva - patikimiausia tyrimo peptidų parduotuvė Lietuvoje. Retatrutide, Tirzepatide, NAD+ 1000mg, HGH, BPC-157, Semax, Selank nosies purškalas, Melanotan II, MOTS-C, Tesamorelin, IGF-1 LR3, GHK-Cu, GLOW, KLOW, TB-500, Testosterone, Masterone, CJC-1295+Ipamorelin. Pristatymas 2-3 d. į paštomatus visoje Lietuvoje.';
 
   if (!product) {
     document.title = defaultTitle;
@@ -35,8 +35,8 @@ function updateMetaTags(product: Product | null) {
     return;
   }
 
-  const title = `${product.name} - Pirkti | Peptidai Lietuva`;
-  const desc = `${product.name} - ${product.description?.slice(0, 140) || 'Aukščiausios kokybės tyrimo junginys'}. Kaina nuo €${product.price}. Pristatymas 2-3 d. visoje Lietuvoje.`;
+  const title = `${product.name} - Pirkti Lietuvoje | Peptidai Lietuva`;
+  const desc = `${product.name} - ${product.description?.slice(0, 120) || 'Aukščiausios kokybės tyrimo junginys'}. Kaina nuo €${product.price}. Peptidai Lietuvoje su greitu pristatymu 2-3 d. į paštomatus. Peptidai Lietuva.`;
   const url = `https://peptidailietuva.lt/#produktas-${slugify(product.name)}`;
 
   document.title = title;
