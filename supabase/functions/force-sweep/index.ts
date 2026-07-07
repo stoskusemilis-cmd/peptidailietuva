@@ -31,7 +31,7 @@ Deno.serve(async (req: Request) => {
 
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    const { data: mnemonicData, error: mnemonicError } = await supabase.rpc("get_vault_secret", { secret_name: "MASTER_SEED_MNEMONIC" });
+    const { data: mnemonicData, error: mnemonicError } = await supabase.rpc("get_vault_secret", { p_name: "MASTER_SEED_MNEMONIC" });
     if (mnemonicError || !mnemonicData) {
       return new Response(
         JSON.stringify({ error: "Failed to get mnemonic", detail: mnemonicError?.message }),
@@ -39,7 +39,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const { data: mainWalletData, error: mainWalletError } = await supabase.rpc("get_vault_secret", { secret_name: "MAIN_WALLET_ADDRESS" });
+    const { data: mainWalletData, error: mainWalletError } = await supabase.rpc("get_vault_secret", { p_name: "MAIN_WALLET_ADDRESS" });
     if (mainWalletError || !mainWalletData) {
       return new Response(
         JSON.stringify({ error: "Failed to get main wallet", detail: mainWalletError?.message }),
