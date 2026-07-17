@@ -18,7 +18,8 @@ export function Checkout({ onClose }: CheckoutProps) {
   const [loading, setLoading] = useState(false);
   const [orderError, setOrderError] = useState('');
   const [orderNumber, setOrderNumber] = useState('');
-  const [solPrice, setSolPrice] = useState<number>(150);
+  const [solPrice, setSolPrice] = useState<number | null>(null);
+  const [solPriceLoading, setSolPriceLoading] = useState(true);
   const [copySuccess, setCopySuccess] = useState<'address' | 'sol' | null>(null);
   const [selectedPayment, setSelectedPayment] = useState<PaymentMethod>(null);
   const [expandedGuide, setExpandedGuide] = useState<PaymentMethod>(null);
@@ -65,21 +66,31 @@ export function Checkout({ onClose }: CheckoutProps) {
   const shippingFee = totalEur >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE_EUR;
   const totalEurWithFee = discountedTotal + shippingFee;
   const activeSolPrice = lockedSolPrice ?? solPrice;
-  const baseSolAmount = parseFloat((totalEurWithFee / activeSolPrice).toFixed(4));
-  const solAmount = (baseSolAmount + uniqueSolOffset).toFixed(4);
+  const baseSolAmount = activeSolPrice ? parseFloat((totalEurWithFee / activeSolPrice).toFixed(4)) : 0;
+  const solAmount = activeSolPrice ? (baseSolAmount + uniqueSolOffset).toFixed(4) : '...';
 
   useEffect(() => {
     let active = true;
-    const fetchAndSet = async () => {
+    const fetchAndSet = async (attempt = 0) => {
       try {
         const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=eur');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-        if (active && data.solana?.eur) setSolPrice(data.solana.eur);
-      } catch {}
+        if (active && data.solana?.eur) {
+          setSolPrice(data.solana.eur);
+          setSolPriceLoading(false);
+        }
+      } catch {
+        if (active && attempt < 3) {
+          setTimeout(() => fetchAndSet(attempt + 1), 2000);
+        } else if (active) {
+          setSolPriceLoading(false);
+        }
+      }
     };
     fetchCitiesAndLockers();
     fetchAndSet();
-    const interval = setInterval(fetchAndSet, 60000);
+    const interval = setInterval(() => fetchAndSet(), 60000);
     return () => { active = false; clearInterval(interval); };
   }, []);
 
@@ -236,6 +247,10 @@ export function Checkout({ onClose }: CheckoutProps) {
     e.preventDefault();
     if (!validatePhone(formData.phone)) {
       setOrderError(t('invalidPhone') || 'Neteisingas telefono numeris.');
+      return;
+    }
+    if (!solPrice) {
+      setOrderError('SOL kaina dar nekrauta. Palaukite kelias sekundes.');
       return;
     }
     setOrderError('');

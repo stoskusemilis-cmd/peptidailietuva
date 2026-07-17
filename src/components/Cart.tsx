@@ -11,29 +11,42 @@ interface CartProps {
 export function Cart({ onClose, onCheckout }: CartProps) {
   const { cart, removeFromCart, getTotalPrice } = useCart();
   const { t, lang } = useLanguage();
-  const [solPrice, setSolPrice] = useState<number>(150);
-  const [priceLoading, setPriceLoading] = useState(false);
+  const [solPrice, setSolPrice] = useState<number | null>(null);
+  const [priceLoading, setPriceLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [priceFetchFailed, setPriceFetchFailed] = useState(false);
 
   const SHIPPING_FEE_EUR = 3.5;
   const FREE_SHIPPING_THRESHOLD = 50;
   const totalEur = getTotalPrice();
   const shippingFee = totalEur >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE_EUR;
   const totalWithShipping = totalEur + shippingFee;
-  const solAmount = (totalWithShipping / solPrice).toFixed(4);
+  const solAmount = solPrice ? (totalWithShipping / solPrice).toFixed(4) : '...';
 
   useEffect(() => {
-    setPriceLoading(true);
-    fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=eur')
-      .then(res => res.json())
-      .then(data => {
-        if (data.solana?.eur) {
+    let active = true;
+    const fetchPrice = async (attempt = 0) => {
+      try {
+        const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=eur');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (active && data.solana?.eur) {
           setSolPrice(data.solana.eur);
           setLastUpdated(new Date());
+          setPriceFetchFailed(false);
+          setPriceLoading(false);
         }
-      })
-      .catch(() => {})
-      .finally(() => setPriceLoading(false));
+      } catch {
+        if (active && attempt < 2) {
+          setTimeout(() => fetchPrice(attempt + 1), 2000);
+        } else if (active) {
+          setPriceFetchFailed(true);
+          setPriceLoading(false);
+        }
+      }
+    };
+    fetchPrice();
+    return () => { active = false; };
   }, []);
 
   if (cart.length === 0) {
@@ -170,25 +183,34 @@ export function Cart({ onClose, onCheckout }: CartProps) {
               </div>
 
               <div className="bg-gradient-to-r from-blue-600/15 to-cyan-600/15 border border-blue-400/25 rounded-xl p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <div>
-                    <p className="text-white/50 text-xs mb-0.5">{t('cartPaySol')}</p>
-                    <p className={`text-white font-bold text-xl font-mono transition-opacity duration-300 ${priceLoading ? 'opacity-40' : 'opacity-100'}`}>
-                      {priceLoading ? '...' : `${solAmount} SOL`}
-                    </p>
+                {priceFetchFailed ? (
+                  <div className="text-center py-2">
+                    <p className="text-yellow-300 text-sm font-semibold">{t('cartRateUnavailable') || 'SOL kursas laikinai nepasiekiamas'}</p>
+                    <p className="text-white/40 text-xs mt-1">{t('cartRateRetry') || 'Galutine SOL suma bus rodoma checkout metu'}</p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-white/50 text-xs mb-0.5">{t('cartRate')}</p>
-                    <p className={`text-white/70 text-sm font-mono transition-opacity duration-300 ${priceLoading ? 'opacity-40' : 'opacity-100'}`}>
-                      1 SOL ≈ {solPrice.toFixed(0)}€
-                    </p>
-                  </div>
-                </div>
-                <div className="pt-2 border-t border-blue-400/15">
-                  <p className="text-white/30 text-xs">
-                    {priceLoading ? t('cartLoadingRate') : lastUpdated ? `${t('cartUpdated')} ${lastUpdated.toLocaleTimeString(lang === 'ru' ? 'ru-RU' : lang === 'en' ? 'en-GB' : 'lt-LT', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}` : ''}
-                  </p>
-                </div>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <p className="text-white/50 text-xs mb-0.5">{t('cartPaySol')}</p>
+                        <p className={`text-white font-bold text-xl font-mono transition-opacity duration-300 ${priceLoading ? 'opacity-40' : 'opacity-100'}`}>
+                          {priceLoading ? '...' : `${solAmount} SOL`}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-white/50 text-xs mb-0.5">{t('cartRate')}</p>
+                        <p className={`text-white/70 text-sm font-mono transition-opacity duration-300 ${priceLoading ? 'opacity-40' : 'opacity-100'}`}>
+                          {solPrice ? `1 SOL ≈ ${solPrice.toFixed(0)}€` : '...'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="pt-2 border-t border-blue-400/15">
+                      <p className="text-white/30 text-xs">
+                        {priceLoading ? t('cartLoadingRate') : lastUpdated ? `${t('cartUpdated')} ${lastUpdated.toLocaleTimeString(lang === 'ru' ? 'ru-RU' : lang === 'en' ? 'en-GB' : 'lt-LT', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}` : ''}
+                      </p>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
