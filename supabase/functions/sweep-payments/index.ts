@@ -130,19 +130,17 @@ Deno.serve(async (req: Request) => {
             details: { balance_lamports: balance, expected_lamports: expectedLamports },
           });
           if (justConfirmed) {
-            EdgeRuntime.waitUntil((async () => {
-              try {
-                const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-                const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-                await fetch(`${supabaseUrl}/functions/v1/send-order-email`, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json", "Authorization": `Bearer ${supabaseKey}` },
-                  body: JSON.stringify({ order_id: order.id, type: "payment_confirmed" }),
-                });
-              } catch (e) {
-                console.error("sweep: payment_confirmed email failed:", e);
-              }
-            })());
+            const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+            const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+            try {
+              await fetch(`${supabaseUrl}/functions/v1/send-order-email`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${supabaseKey}` },
+                body: JSON.stringify({ order_id: order.id, type: "payment_confirmed" }),
+              });
+            } catch (e) {
+              console.error("sweep: payment_confirmed email failed:", e);
+            }
           }
         }
 

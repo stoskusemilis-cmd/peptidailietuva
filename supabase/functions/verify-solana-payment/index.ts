@@ -160,22 +160,26 @@ Deno.serve(async (req: Request) => {
           .maybeSingle();
 
         if (updated) {
+          const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+          const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+          try {
+            await fetch(`${supabaseUrl}/functions/v1/send-order-email`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", "Authorization": `Bearer ${supabaseKey}` },
+              body: JSON.stringify({ order_id, type: "payment_confirmed" }),
+            });
+          } catch (e) {
+            console.error("payment_confirmed email failed:", e);
+          }
           EdgeRuntime.waitUntil((async () => {
             try {
-              const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-              const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-              await fetch(`${supabaseUrl}/functions/v1/send-order-email`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${supabaseKey}` },
-                body: JSON.stringify({ order_id, type: "payment_confirmed" }),
-              });
               await fetch(`${supabaseUrl}/functions/v1/sweep-payments`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json", "Authorization": `Bearer ${supabaseKey}` },
                 body: JSON.stringify({ order_id }),
               });
             } catch (e) {
-              console.error("post-confirm tasks failed:", e);
+              console.error("post-confirm sweep failed:", e);
             }
           })());
         }
