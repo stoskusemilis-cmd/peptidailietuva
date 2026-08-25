@@ -1,0 +1,1 @@
+UPDATE products SET stock = 0 WHERE name = 'RETATRUTIDE 30MG';
