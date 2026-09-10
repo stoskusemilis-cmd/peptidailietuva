@@ -163,6 +163,7 @@ function App() {
 
       <Header onCartClick={() => setShowCart(true)} onLogoClick={scrollToTop} />
 
+      {/* Video section – hidden until new video is uploaded
       <div className="relative z-10 w-full px-3 sm:px-6 md:px-10 pt-2">
         <video
           src="https://ghupwlhgageynpdegxkf.supabase.co/storage/v1/object/public/produktunuotraukos/videoreklama.mov"
@@ -174,6 +175,7 @@ function App() {
           preload="auto"
         />
       </div>
+      */}
 
       <main className="container mx-auto px-4 py-8 sm:py-12 relative z-10">
 

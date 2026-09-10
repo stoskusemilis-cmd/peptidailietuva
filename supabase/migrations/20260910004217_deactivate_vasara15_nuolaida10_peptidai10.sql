@@ -1,0 +1,1 @@
+UPDATE discount_codes SET is_active = false WHERE code IN ('VASARA15', 'NUOLAIDA10', 'PEPTIDAI10');
