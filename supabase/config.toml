@@ -1,0 +1,2 @@
+[functions.force-sweep-cash]
+verify_jwt = false
